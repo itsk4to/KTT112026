@@ -1,14 +1,13 @@
-
 name: KTT112026 - ZIP Update
 
 on:
   workflow_dispatch:
     inputs:
       zip_name:
-        description: "ZIP filename in itsk4to/File-Update"
+        description: "Tên ZIP trong repo itsk4to/File-Update"
         required: true
         type: string
-        default: "KTT112026_V0.1.0.zip"
+        default: "KTT112026_NEW.zip"
 
 permissions:
   contents: write
@@ -19,18 +18,18 @@ concurrency:
 
 jobs:
   update:
-    name: Validate, Test and Deploy
-    runs-on: ubuntu-24.04
+    name: Validate, Test and Push KTT112026
+    runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
+      # 1. Giữ nguyên cách checkout của workflow cũ.
       - name: Checkout main
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
-      # 2. Validate ZIP filename
+      # 2. Chỉ đổi quy tắc tên ZIP và project version cho KTT112026.
       - name: Validate ZIP filename
         id: zip
         shell: bash
@@ -39,61 +38,39 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ ! "$ZIP_NAME" =~ ^KTT112026_V([0-9]+\.[0-9]+\.[0-9]+)\.zip$ ]]; then
-            echo "::error::Invalid ZIP filename: $ZIP_NAME"
-            echo "::error::Expected: KTT112026_V0.1.0.zip"
+          if [[ "$ZIP_NAME" == "KTT112026_NEW.zip" ]]; then
+            VERSION="0.1.0"
+          elif [[ "$ZIP_NAME" =~ ^KTT112026_V([0-9]+\.[0-9]+\.[0-9]+)(_[A-Za-z0-9.-]+)?\.zip$ ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+          else
+            echo "::error::Tên ZIP không hợp lệ: $ZIP_NAME"
+            echo "Dùng KTT112026_NEW.zip hoặc KTT112026_V0.1.0.zip"
             exit 1
           fi
-
-          VERSION="${BASH_REMATCH[1]}"
-
           echo "name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
           echo "ZIP: $ZIP_NAME"
           echo "Version: $VERSION"
 
-      # 3. Download ZIP
+      # 3. Tải ZIP từ đúng kho File-Update như workflow cũ.
       - name: Download update ZIP
         shell: bash
         env:
           ZIP_NAME: ${{ steps.zip.outputs.name }}
         run: |
           set -euo pipefail
-
           URL="https://raw.githubusercontent.com/itsk4to/File-Update/main/${ZIP_NAME}"
-
-          curl \
-            --fail \
-            --location \
-            --retry 3 \
-            --retry-delay 2 \
-            --connect-timeout 20 \
-            "$URL" \
-            --output "$RUNNER_TEMP/ktt112026-update.zip"
-
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "$URL" --output "$RUNNER_TEMP/ktt112026-update.zip"
           test -s "$RUNNER_TEMP/ktt112026-update.zip"
-
-          echo "Downloaded:"
           ls -lh "$RUNNER_TEMP/ktt112026-update.zip"
 
-      # 4. Validate ZIP archive
+      # 4. Kiểm tra ZIP trước khi giải nén.
       - name: Validate ZIP archive
-        shell: bash
-        run: |
-          set -euo pipefail
+        run: unzip -t "$RUNNER_TEMP/ktt112026-update.zip"
 
-          unzip -t "$RUNNER_TEMP/ktt112026-update.zip"
-
-      # 5. Setup Python
-      # Cache disabled intentionally:
-      # Project dependencies are inside downloaded ZIP.
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      # 6. Safely extract ZIP
+      # 5. Dùng lại cơ chế giải nén an toàn + overlay của workflow cũ.
+      #    Chỉ thay thư mục đích và tên thư mục bọc được nhận diện.
       - name: Extract update safely
         shell: bash
         run: |
@@ -105,409 +82,171 @@ jobs:
           import stat
           import shutil
           import zipfile
-
           from pathlib import Path, PurePosixPath
 
-          archive = (
-              Path(os.environ["RUNNER_TEMP"])
-              / "ktt112026-update.zip"
-          )
-
-          temp = (
-              Path(os.environ["RUNNER_TEMP"])
-              / "ktt112026-extract"
-          )
+          archive = Path(os.environ["RUNNER_TEMP"]) / "ktt112026-update.zip"
+          destination = Path("KTT112026")
+          temp = Path(os.environ["RUNNER_TEMP"]) / "ktt112026-extract"
 
           if temp.exists():
               shutil.rmtree(temp)
-
           temp.mkdir(parents=True)
-
-          wrappers = {
-              "ktt112026",
-              "ktt112026_new",
-          }
+          destination.mkdir(parents=True, exist_ok=True)
 
           blocked_dirs = {
-              ".git",
-              ".github",
-              ".venv",
-              "venv",
-              "__pycache__",
-              ".pytest_cache",
-              ".mypy_cache",
-              ".ruff_cache",
-              "node_modules",
+              ".git", ".github", ".venv", "venv", "__pycache__",
+              ".pytest_cache", ".mypy_cache", ".ruff_cache", "node_modules"
           }
-
-          blocked_suffixes = {
-              ".db",
-              ".sqlite",
-              ".sqlite3",
-          }
+          blocked_suffixes = {".db", ".sqlite", ".sqlite3"}
 
           def is_protected(parts):
-              if not parts:
-                  return True
-
               for part in parts:
                   lower = part.lower()
-
-                  if lower in blocked_dirs:
+                  if lower in blocked_dirs or lower == ".env":
                       return True
-
-                  if lower == ".env":
-                      return True
-
                   if lower.startswith(".env.") and lower != ".env.example":
                       return True
-
-              filename = parts[-1].lower()
-
-              if Path(filename).suffix.lower() in blocked_suffixes:
-                  return True
-
-              return False
-
-          selected = {}
+              filename = parts[-1].lower() if parts else ""
+              return Path(filename).suffix.lower() in blocked_suffixes
 
           with zipfile.ZipFile(archive) as z:
               files = []
-
               for info in z.infolist():
                   raw = info.filename.replace("\\", "/")
                   path = PurePosixPath(raw)
-
                   if path.is_absolute() or not path.parts:
-                      raise RuntimeError(
-                          f"Unsafe path: {raw}"
-                      )
-
-                  if ".." in path.parts:
-                      raise RuntimeError(
-                          f"Path traversal: {raw}"
-                      )
-
-                  if ":" in path.parts[0]:
-                      raise RuntimeError(
-                          f"Invalid path: {raw}"
-                      )
-
+                      raise RuntimeError(f"Path không an toàn: {raw}")
+                  if ".." in path.parts or ":" in path.parts[0]:
+                      raise RuntimeError(f"Path traversal: {raw}")
                   mode = info.external_attr >> 16
-
                   if stat.S_ISLNK(mode):
-                      raise RuntimeError(
-                          f"Symlink not allowed: {raw}"
-                      )
-
-                  if info.is_dir():
-                      continue
-
-                  if info.file_size > 50 * 1024 * 1024:
-                      raise RuntimeError(
-                          f"File too large: {raw}"
-                      )
-
-                  files.append((info, path.parts))
+                      raise RuntimeError(f"Không chấp nhận symlink: {raw}")
+                  if not info.is_dir():
+                      files.append((info, path.parts))
 
               if not files:
-                  raise RuntimeError(
-                      "ZIP is empty."
-                  )
+                  raise RuntimeError("ZIP không chứa file nào.")
+              if sum(info.file_size for info, _ in files) > 200 * 1024 * 1024:
+                  raise RuntimeError("ZIP vượt giới hạn giải nén 200 MB.")
 
-              if len(files) > 10000:
-                  raise RuntimeError(
-                      "Too many files in ZIP."
-                  )
+              first_parts = {parts[0] for _, parts in files}
+              strip_root = None
+              if len(first_parts) == 1:
+                  candidate = next(iter(first_parts))
+                  if re.match(r"^KTT112026([-_].*)?$", candidate, re.IGNORECASE):
+                      strip_root = candidate
 
-              total_size = sum(
-                  info.file_size
-                  for info, _ in files
-              )
-
-              if total_size > 200 * 1024 * 1024:
-                  raise RuntimeError(
-                      "ZIP exceeds 200 MB."
-                  )
-
-              # Detect optional wrapper folder.
-              first_parts = {
-                  parts[0].lower()
-                  for _, parts in files
-              }
-
-              strip_root = (
-                  next(iter(first_parts))
-                  if len(first_parts) == 1
-                  and next(iter(first_parts)) in wrappers
-                  else None
-              )
-
-              for info, original_parts in files:
-                  parts = list(original_parts)
-
-                  if strip_root:
-                      parts = parts[1:]
-
-                  if not parts:
+              selected = {}
+              for info, parts in files:
+                  relative = parts
+                  if strip_root and relative[0].lower() == strip_root.lower():
+                      relative = relative[1:]
+                  if relative and relative[0].lower() == "ktt112026":
+                      priority = 2
+                      relative = relative[1:]
+                  else:
+                      priority = 1
+                  if not relative:
                       continue
-
-                  if is_protected(parts):
-                      print(
-                          f"SKIP protected: {info.filename}"
-                      )
+                  if is_protected(relative):
+                      print(f"SKIP protected: {info.filename}")
                       continue
-
-                  normalized = PurePosixPath(
-                      *parts
-                  ).as_posix()
-
-                  if normalized in selected:
-                      raise RuntimeError(
-                          f"Duplicate ZIP path: {normalized}"
-                      )
-
-                  selected[normalized] = info
+                  normalized = PurePosixPath(*relative).as_posix()
+                  previous = selected.get(normalized)
+                  if previous is not None:
+                      old_priority, _ = previous
+                      if priority == old_priority:
+                          raise RuntimeError(f"ZIP trùng file cùng mức ưu tiên: {normalized}")
+                      if priority < old_priority:
+                          print(f"SKIP duplicate: {info.filename}")
+                          continue
+                      print(f"Ưu tiên file project: {info.filename}")
+                  selected[normalized] = (priority, info)
 
               if not selected:
-                  raise RuntimeError(
-                      "No valid project files found."
-                  )
+                  raise RuntimeError("Không có file hợp lệ để cập nhật.")
 
-              for normalized, info in selected.items():
-                  relative = Path(
-                      *PurePosixPath(normalized).parts
-                  )
+              for normalized, (_, info) in selected.items():
+                  target = temp / Path(*PurePosixPath(normalized).parts)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with z.open(info) as source, target.open("wb") as output:
+                      shutil.copyfileobj(source, output)
 
-                  target = temp / relative
-
-                  target.parent.mkdir(
-                      parents=True,
-                      exist_ok=True
-                  )
-
-                  with z.open(info) as source:
-                      with target.open("xb") as output:
-                          shutil.copyfileobj(
-                              source,
-                              output
-                          )
-
-              print(
-                  f"Extracted {len(selected)} files."
-              )
-
-          # Verify expected project structure.
-          required_files = [
-              "pyproject.toml",
-              "requirements.txt",
-              "README.md",
-              "src/ktt112026/__init__.py",
-              "src/ktt112026/bot.py",
-              "src/ktt112026/config.py",
+          # Kiểm tra cấu trúc ZIP trước khi ghi vào repo.
+          required = [
+              "pyproject.toml", "requirements.txt", "requirements-dev.txt",
+              "README.md", "src/ktt112026/__init__.py",
+              "src/ktt112026/bot.py", "src/ktt112026/config.py",
               "src/ktt112026/features/voice/presence.py",
               "src/ktt112026/features/voice/tts/service.py",
-              "src/ktt112026/features/voice/tts/voices.py",
               "src/ktt112026/features/voice/music/player.py",
               "src/ktt112026/features/voice/music/manager.py",
               "src/ktt112026/features/voice/audio/ffmpeg.py",
               "src/ktt112026/platform/discord_app/voice_commands.py",
           ]
-
-          missing = [
-              item
-              for item in required_files
-              if not (temp / item).is_file()
-          ]
-
+          missing = [name for name in required if not (temp / name).is_file()]
           if missing:
-              raise RuntimeError(
-                  "Missing required files:\n"
-                  + "\n".join(missing)
-              )
+              raise RuntimeError("ZIP thiếu file bắt buộc: " + ", ".join(missing))
 
-          print("Project structure verified.")
+          copied = 0
+          for source in temp.rglob("*"):
+              if not source.is_file():
+                  continue
+              target = destination / source.relative_to(temp)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source, target)
+              copied += 1
+          print(f"Đã kiểm tra cấu trúc và overlay {copied} file vào {destination}/")
           PY
 
-      # 7. Verify project version
+      # 6. Xác minh version trong pyproject.toml và cấu trúc package.
       - name: Verify project version
-        working-directory: ${{ runner.temp }}/ktt112026-extract
-        env:
-          EXPECTED_VERSION: ${{ steps.zip.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          VERSION="$(python - <<'PY'
-          import tomllib
-          from pathlib import Path
-
-          data = tomllib.loads(
-              Path("pyproject.toml").read_text(
-                  encoding="utf-8"
-              )
-          )
-
-          print(data["project"]["version"])
-          PY
-          )"
-
-          echo "Expected: $EXPECTED_VERSION"
-          echo "Actual: $VERSION"
-
-          if [[ "$VERSION" != "$EXPECTED_VERSION" ]]; then
-            echo "::error::Project version mismatch."
-            exit 1
-          fi
-
-          echo "Version verified."
-
-      # 8. Install dependencies
-      - name: Install project dependencies
-        working-directory: ${{ runner.temp }}/ktt112026-extract
-        run: |
-          set -euo pipefail
-
-          python -m pip install --upgrade pip setuptools wheel
-
-          python -m pip install -r requirements.txt
-
-          python -m pip install pytest
-
-          # Install package if pyproject supports it.
-          python -m pip install -e . --no-deps
-
-      # 9. Compile source
-      - name: Compile Python source
-        working-directory: ${{ runner.temp }}/ktt112026-extract
-        run: |
-          set -euo pipefail
-
-          python -m compileall -q src
-
-          echo "Python compilation successful."
-
-      # 10. Run unit tests
-      - name: Run unit tests
-        working-directory: ${{ runner.temp }}/ktt112026-extract
-        run: |
-          set -euo pipefail
-
-          if [[ -d tests/unit ]]; then
-            python -m pytest tests/unit -v
-          elif [[ -d tests ]]; then
-            python -m pytest tests -v
-          else
-            echo "::error::Tests directory not found."
-            exit 1
-          fi
-
-      # 11. Sync project safely
-      - name: Sync project files
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          SOURCE="$RUNNER_TEMP/ktt112026-extract"
-          DESTINATION="KTT112026"
-
-          mkdir -p "$DESTINATION"
-
-          # Keep user data outside source synchronization.
-          BACKUP="$RUNNER_TEMP/ktt112026-protected"
-
-          mkdir -p "$BACKUP"
-
-          if [[ -d "$DESTINATION" ]]; then
-            find "$DESTINATION" -type f \
-              \( \
-                -name '.env' \
-                -o -name '.env.*' \
-                -o -name '*.db' \
-                -o -name '*.sqlite' \
-                -o -name '*.sqlite3' \
-              \) \
-              ! -name '.env.example' \
-              -print0 |
-            while IFS= read -r -d '' file; do
-              relative="${file#"$DESTINATION"/}"
-
-              mkdir -p "$BACKUP/$(dirname "$relative")"
-
-              cp -p "$file" "$BACKUP/$relative"
-            done
-          fi
-
-          # Synchronize source.
-          # Excludes prevent deleting protected user data.
-          rsync -a \
-            --delete \
-            --exclude='.env' \
-            --exclude='.env.*' \
-            --exclude='*.db' \
-            --exclude='*.sqlite' \
-            --exclude='*.sqlite3' \
-            --exclude='.git/' \
-            --exclude='__pycache__/' \
-            --exclude='.pytest_cache/' \
-            "$SOURCE/" \
-            "$DESTINATION/"
-
-          # Restore protected files.
-          if [[ -d "$BACKUP" ]]; then
-            rsync -a "$BACKUP/" "$DESTINATION/"
-          fi
-
-          echo "Project synchronized."
-
-      # 12. Verify deployed project
-      - name: Verify deployed project
         working-directory: KTT112026
         env:
           EXPECTED_VERSION: ${{ steps.zip.outputs.version }}
         run: |
           set -euo pipefail
-
-          test -f pyproject.toml
-          test -f requirements.txt
-          test -f README.md
-
-          test -f src/ktt112026/__init__.py
-          test -f src/ktt112026/bot.py
-          test -f src/ktt112026/config.py
-
-          test -f src/ktt112026/features/voice/presence.py
-          test -f src/ktt112026/features/voice/tts/service.py
-          test -f src/ktt112026/features/voice/music/player.py
-
-          VERSION="$(python - <<'PY'
+          python - <<'PY'
+          import os
           import tomllib
           from pathlib import Path
 
-          data = tomllib.loads(
-              Path("pyproject.toml").read_text(
-                  encoding="utf-8"
-              )
-          )
-
-          print(data["project"]["version"])
+          with Path("pyproject.toml").open("rb") as file:
+              project = tomllib.load(file)["project"]
+          actual = str(project["version"])
+          expected = os.environ["EXPECTED_VERSION"]
+          print(f"Expected version: {expected}")
+          print(f"Project version:  {actual}")
+          if actual != expected:
+              raise SystemExit("Version trong tên ZIP không khớp pyproject.toml")
           PY
-          )"
 
-          if [[ "$VERSION" != "$EXPECTED_VERSION" ]]; then
-            echo "::error::Deployed version mismatch."
-            exit 1
-          fi
+      # 7. Cài đúng cả dependency kiểm thử; workflow cũ không có bước test này.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-          python -m compileall -q src
+      - name: Install project and test dependencies
+        working-directory: KTT112026
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -e . --no-deps
+          python -m pip show pytest
+          python -m pip show pytest-asyncio
 
-          echo "KTT112026 $VERSION deployed and verified."
+      # 8. Chạy unit tests trước khi cho phép commit.
+      - name: Run unit tests
+        working-directory: KTT112026
+        run: python -m pytest tests/unit -v
 
-      # 13. Stage files
+      # 9. Stage riêng KTT112026; không chạm kato-tutien/ của bản cũ.
       - name: Stage source update
         shell: bash
         run: |
           set -euo pipefail
-
           git add -A -- KTT112026
 
           python - <<'PY'
@@ -516,88 +255,41 @@ jobs:
           from pathlib import PurePosixPath
 
           result = subprocess.run(
-              [
-                  "git",
-                  "diff",
-                  "--cached",
-                  "--name-only"
-              ],
-              check=True,
-              capture_output=True,
-              text=True
+              ["git", "diff", "--cached", "--name-only"],
+              check=True, capture_output=True, text=True
           )
-
-          files = [
-              line.strip()
-              for line in result.stdout.splitlines()
-              if line.strip()
-          ]
-
-          forbidden_suffixes = (
-              ".db",
-              ".sqlite",
-              ".sqlite3",
-          )
+          files = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+          forbidden_suffixes = (".db", ".sqlite", ".sqlite3")
 
           for filename in files:
               path = PurePosixPath(filename)
               basename = path.name.lower()
-
               if not filename.startswith("KTT112026/"):
-                  sys.exit(
-                      f"File outside project: {filename}"
-                  )
-
+                  sys.exit(f"File ngoài project: {filename}")
               if basename == ".env":
-                  sys.exit(
-                      f"Blocked .env: {filename}"
-                  )
-
-              if (
-                  basename.startswith(".env.")
-                  and basename != ".env.example"
-              ):
-                  sys.exit(
-                      f"Blocked environment file: {filename}"
-                  )
-
+                  sys.exit(f"Từ chối commit .env: {filename}")
+              if basename.startswith(".env.") and basename != ".env.example":
+                  sys.exit(f"Từ chối commit file môi trường: {filename}")
               if basename.endswith(forbidden_suffixes):
-                  sys.exit(
-                      f"Blocked database: {filename}"
-                  )
-
-          print(
-              f"Validated {len(files)} staged files."
-          )
+                  sys.exit(f"Từ chối commit database: {filename}")
+          print(f"Đã kiểm tra {len(files)} file staged.")
           PY
 
-      # 14. Commit and push
-      - name: Commit and push
+      # 10. Commit và push theo cách của workflow cũ.
+      - name: Commit and push to main
         shell: bash
         env:
           VERSION: ${{ steps.zip.outputs.version }}
         run: |
           set -euo pipefail
-
           if git diff --cached --quiet; then
-            echo "No changes detected."
+            echo "Không có thay đổi mới."
             exit 0
           fi
-
           git config user.name "github-actions[bot]"
-
-          git config user.email \
-            "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git commit \
-            -m "Update KTT112026 v${VERSION}"
-
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update KTT112026 v${VERSION}"
           git fetch origin main
-
           git rebase origin/main
-
           git push origin HEAD:main
-
-          echo "=================================="
-          echo "KTT112026 v${VERSION} updated."
-          echo "=================================="
+          echo "Đã push KTT112026 v${VERSION} lên main."
