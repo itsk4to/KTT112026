@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       zip_name:
-        description: "Tên ZIP trong repo itsk4to/File-Update"
+        description: "ZIP filename in itsk4to/File-Update"
         required: true
         type: string
         default: "KTT112026_V0.1.0.zip"
@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   update:
-    name: Validate, Test and Deploy KTT112026
+    name: Validate, Test and Deploy
     runs-on: ubuntu-24.04
 
     steps:
@@ -30,14 +30,7 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      # 2. Setup Python
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-          cache: pip
-
-      # 3. Validate ZIP filename
+      # 2. Validate ZIP filename
       - name: Validate ZIP filename
         id: zip
         shell: bash
@@ -46,15 +39,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          VERSION=""
-
-          if [[ "$ZIP_NAME" =~ ^KTT112026_V([0-9]+\.[0-9]+\.[0-9]+)\.zip$ ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-          else
-            echo "::error::Tên ZIP không hợp lệ: $ZIP_NAME"
-            echo "::error::Định dạng: KTT112026_V0.1.0.zip"
+          if [[ ! "$ZIP_NAME" =~ ^KTT112026_V([0-9]+\.[0-9]+\.[0-9]+)\.zip$ ]]; then
+            echo "::error::Invalid ZIP filename: $ZIP_NAME"
+            echo "::error::Expected: KTT112026_V0.1.0.zip"
             exit 1
           fi
+
+          VERSION="${BASH_REMATCH[1]}"
 
           echo "name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -62,7 +53,7 @@ jobs:
           echo "ZIP: $ZIP_NAME"
           echo "Version: $VERSION"
 
-      # 4. Download ZIP
+      # 3. Download ZIP
       - name: Download update ZIP
         shell: bash
         env:
@@ -83,10 +74,10 @@ jobs:
 
           test -s "$RUNNER_TEMP/ktt112026-update.zip"
 
-          echo "Downloaded ZIP:"
+          echo "Downloaded:"
           ls -lh "$RUNNER_TEMP/ktt112026-update.zip"
 
-      # 5. Validate ZIP archive
+      # 4. Validate ZIP archive
       - name: Validate ZIP archive
         shell: bash
         run: |
@@ -94,7 +85,15 @@ jobs:
 
           unzip -t "$RUNNER_TEMP/ktt112026-update.zip"
 
-      # 6. Extract safely
+      # 5. Setup Python
+      # Cache disabled intentionally:
+      # Project dependencies are inside downloaded ZIP.
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # 6. Safely extract ZIP
       - name: Extract update safely
         shell: bash
         run: |
@@ -124,6 +123,11 @@ jobs:
 
           temp.mkdir(parents=True)
 
+          wrappers = {
+              "ktt112026",
+              "ktt112026_new",
+          }
+
           blocked_dirs = {
               ".git",
               ".github",
@@ -140,13 +144,6 @@ jobs:
               ".db",
               ".sqlite",
               ".sqlite3",
-          }
-
-          wrappers = {
-              "ktt112026",
-              "ktt112026_new",
-              "katotutien",
-              "katott",
           }
 
           def is_protected(parts):
@@ -183,7 +180,7 @@ jobs:
 
                   if path.is_absolute() or not path.parts:
                       raise RuntimeError(
-                          f"Path không an toàn: {raw}"
+                          f"Unsafe path: {raw}"
                       )
 
                   if ".." in path.parts:
@@ -193,49 +190,63 @@ jobs:
 
                   if ":" in path.parts[0]:
                       raise RuntimeError(
-                          f"Path không hợp lệ: {raw}"
+                          f"Invalid path: {raw}"
                       )
 
                   mode = info.external_attr >> 16
 
                   if stat.S_ISLNK(mode):
                       raise RuntimeError(
-                          f"Không chấp nhận symlink: {raw}"
+                          f"Symlink not allowed: {raw}"
                       )
 
                   if info.is_dir():
                       continue
 
+                  if info.file_size > 50 * 1024 * 1024:
+                      raise RuntimeError(
+                          f"File too large: {raw}"
+                      )
+
                   files.append((info, path.parts))
 
               if not files:
                   raise RuntimeError(
-                      "ZIP không chứa file nào."
+                      "ZIP is empty."
                   )
 
               if len(files) > 10000:
                   raise RuntimeError(
-                      "ZIP chứa quá nhiều file."
+                      "Too many files in ZIP."
                   )
 
               total_size = sum(
-                  info.file_size for info, _ in files
+                  info.file_size
+                  for info, _ in files
               )
 
               if total_size > 200 * 1024 * 1024:
                   raise RuntimeError(
-                      "ZIP vượt giới hạn giải nén 200 MB."
+                      "ZIP exceeds 200 MB."
                   )
+
+              # Detect optional wrapper folder.
+              first_parts = {
+                  parts[0].lower()
+                  for _, parts in files
+              }
+
+              strip_root = (
+                  next(iter(first_parts))
+                  if len(first_parts) == 1
+                  and next(iter(first_parts)) in wrappers
+                  else None
+              )
 
               for info, original_parts in files:
                   parts = list(original_parts)
 
-                  # Bỏ thư mục bọc ngoài.
-                  if parts and parts[0].lower() in wrappers:
-                      parts = parts[1:]
-
-                  # Hỗ trợ ZIP có thêm thư mục project bên trong.
-                  if parts and parts[0].lower() in wrappers:
+                  if strip_root:
                       parts = parts[1:]
 
                   if not parts:
@@ -253,17 +264,16 @@ jobs:
 
                   if normalized in selected:
                       raise RuntimeError(
-                          f"ZIP có file trùng đường dẫn: {normalized}"
+                          f"Duplicate ZIP path: {normalized}"
                       )
 
                   selected[normalized] = info
 
               if not selected:
                   raise RuntimeError(
-                      "Không có file hợp lệ để cập nhật."
+                      "No valid project files found."
                   )
 
-              # Giải nén vào thư mục tạm.
               for normalized, info in selected.items():
                   relative = Path(
                       *PurePosixPath(normalized).parts
@@ -277,7 +287,7 @@ jobs:
                   )
 
                   with z.open(info) as source:
-                      with target.open("wb") as output:
+                      with target.open("xb") as output:
                           shutil.copyfileobj(
                               source,
                               output
@@ -287,7 +297,7 @@ jobs:
                   f"Extracted {len(selected)} files."
               )
 
-          # Kiểm tra cấu trúc dự án.
+          # Verify expected project structure.
           required_files = [
               "pyproject.toml",
               "requirements.txt",
@@ -305,18 +315,18 @@ jobs:
           ]
 
           missing = [
-              item for item in required_files
+              item
+              for item in required_files
               if not (temp / item).is_file()
           ]
 
           if missing:
               raise RuntimeError(
-                  "Thiếu file bắt buộc:\n"
+                  "Missing required files:\n"
                   + "\n".join(missing)
               )
 
           print("Project structure verified.")
-          print(f"Source directory: {temp}")
           PY
 
       # 7. Verify project version
@@ -345,32 +355,53 @@ jobs:
           echo "Actual: $VERSION"
 
           if [[ "$VERSION" != "$EXPECTED_VERSION" ]]; then
-            echo "::error::Sai phiên bản project!"
+            echo "::error::Project version mismatch."
             exit 1
           fi
 
-          echo "KTT112026 $VERSION verified."
+          echo "Version verified."
 
-      # 8. Install dependencies and run tests
-      - name: Install project
+      # 8. Install dependencies
+      - name: Install project dependencies
         working-directory: ${{ runner.temp }}/ktt112026-extract
         run: |
           set -euo pipefail
 
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
 
-          python -m pip install -e ".[dev]"
+          python -m pip install -r requirements.txt
 
-      - name: Run unit tests
+          python -m pip install pytest
+
+          # Install package if pyproject supports it.
+          python -m pip install -e . --no-deps
+
+      # 9. Compile source
+      - name: Compile Python source
         working-directory: ${{ runner.temp }}/ktt112026-extract
         run: |
           set -euo pipefail
 
           python -m compileall -q src
 
-          python -m pytest tests/unit -v
+          echo "Python compilation successful."
 
-      # 9. Sync project
+      # 10. Run unit tests
+      - name: Run unit tests
+        working-directory: ${{ runner.temp }}/ktt112026-extract
+        run: |
+          set -euo pipefail
+
+          if [[ -d tests/unit ]]; then
+            python -m pytest tests/unit -v
+          elif [[ -d tests ]]; then
+            python -m pytest tests -v
+          else
+            echo "::error::Tests directory not found."
+            exit 1
+          fi
+
+      # 11. Sync project safely
       - name: Sync project files
         shell: bash
         run: |
@@ -381,14 +412,37 @@ jobs:
 
           mkdir -p "$DESTINATION"
 
-          # Đồng bộ file mới và xóa file source cũ
-          # không còn tồn tại trong ZIP.
-          # Bảo vệ .env và database hiện có.
+          # Keep user data outside source synchronization.
+          BACKUP="$RUNNER_TEMP/ktt112026-protected"
+
+          mkdir -p "$BACKUP"
+
+          if [[ -d "$DESTINATION" ]]; then
+            find "$DESTINATION" -type f \
+              \( \
+                -name '.env' \
+                -o -name '.env.*' \
+                -o -name '*.db' \
+                -o -name '*.sqlite' \
+                -o -name '*.sqlite3' \
+              \) \
+              ! -name '.env.example' \
+              -print0 |
+            while IFS= read -r -d '' file; do
+              relative="${file#"$DESTINATION"/}"
+
+              mkdir -p "$BACKUP/$(dirname "$relative")"
+
+              cp -p "$file" "$BACKUP/$relative"
+            done
+          fi
+
+          # Synchronize source.
+          # Excludes prevent deleting protected user data.
           rsync -a \
             --delete \
             --exclude='.env' \
             --exclude='.env.*' \
-            --include='.env.example' \
             --exclude='*.db' \
             --exclude='*.sqlite' \
             --exclude='*.sqlite3' \
@@ -398,9 +452,14 @@ jobs:
             "$SOURCE/" \
             "$DESTINATION/"
 
-          echo "KTT112026 synchronized."
+          # Restore protected files.
+          if [[ -d "$BACKUP" ]]; then
+            rsync -a "$BACKUP/" "$DESTINATION/"
+          fi
 
-      # 10. Verify deployed project
+          echo "Project synchronized."
+
+      # 12. Verify deployed project
       - name: Verify deployed project
         working-directory: KTT112026
         env:
@@ -435,13 +494,15 @@ jobs:
           )"
 
           if [[ "$VERSION" != "$EXPECTED_VERSION" ]]; then
-            echo "::error::Phiên bản sau đồng bộ không khớp!"
+            echo "::error::Deployed version mismatch."
             exit 1
           fi
 
-          echo "Deployed KTT112026 $VERSION."
+          python -m compileall -q src
 
-      # 11. Stage source update
+          echo "KTT112026 $VERSION deployed and verified."
+
+      # 13. Stage files
       - name: Stage source update
         shell: bash
         run: |
@@ -459,11 +520,11 @@ jobs:
                   "git",
                   "diff",
                   "--cached",
-                  "--name-only",
+                  "--name-only"
               ],
               check=True,
               capture_output=True,
-              text=True,
+              text=True
           )
 
           files = [
@@ -484,12 +545,12 @@ jobs:
 
               if not filename.startswith("KTT112026/"):
                   sys.exit(
-                      f"File ngoài project: {filename}"
+                      f"File outside project: {filename}"
                   )
 
               if basename == ".env":
                   sys.exit(
-                      f"Từ chối commit .env: {filename}"
+                      f"Blocked .env: {filename}"
                   )
 
               if (
@@ -497,21 +558,21 @@ jobs:
                   and basename != ".env.example"
               ):
                   sys.exit(
-                      f"Từ chối commit file môi trường: {filename}"
+                      f"Blocked environment file: {filename}"
                   )
 
               if basename.endswith(forbidden_suffixes):
                   sys.exit(
-                      f"Từ chối commit database: {filename}"
+                      f"Blocked database: {filename}"
                   )
 
           print(
-              f"Đã kiểm tra {len(files)} file staged."
+              f"Validated {len(files)} staged files."
           )
           PY
 
-      # 12. Commit and push
-      - name: Commit and push to main
+      # 14. Commit and push
+      - name: Commit and push
         shell: bash
         env:
           VERSION: ${{ steps.zip.outputs.version }}
@@ -519,11 +580,12 @@ jobs:
           set -euo pipefail
 
           if git diff --cached --quiet; then
-            echo "Không có thay đổi mới."
+            echo "No changes detected."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
+
           git config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -536,6 +598,6 @@ jobs:
 
           git push origin HEAD:main
 
-          echo "================================"
+          echo "=================================="
           echo "KTT112026 v${VERSION} updated."
-          echo "================================"
+          echo "=================================="
