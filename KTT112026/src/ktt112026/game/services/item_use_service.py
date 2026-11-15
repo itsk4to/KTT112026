@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from ktt112026.game.services._tx import atomic
 from ktt112026.game.content.loader import load_danduoc
 from ktt112026.game.content.realms import stage_requirement
 from ktt112026.game.models.player import STAT_HARD_CAP
@@ -16,6 +17,7 @@ class ItemUseService:
         self.repo = repo
         self._pills = {x["id"]: x for x in load_danduoc()}
 
+    @atomic
     def use(self, user_id: str, item_id: str) -> dict:
         item_id = item_id.strip().lower()
         pill = self._pills.get(item_id)
@@ -78,9 +80,13 @@ class ItemUseService:
                 messages.append("Tịnh hóa thất bại (mất đan)")
         elif etype == "heal_full_out_of_combat":
             messages.append("Hồi phục căn cơ (HP/MP ngoài trận — placeholder)")
+        elif str(etype).startswith("dokiep_"):
+            # Hiệu lực ở lần `.dokiep` kế tiếp (một lần). Dùng lại đan cùng loại sẽ ghi đè, không cộng dồn.
+            self.repo.buff_set(user_id, str(etype), dict(effect))
+            messages.append("Đã kích hoạt — có hiệu lực ở lần `.dokiep` kế tiếp")
         else:
-            # dokiep / combat buffs: acknowledge consume, full combat later
-            messages.append(f"Đã dùng — hiệu ứng `{etype}` được ghi nhận (một phần combat/độ kiếp sẽ kích hoạt khi hệ đó mở đầy đủ)")
+            # combat buffs: acknowledge consume, full combat later
+            messages.append(f"Đã dùng — hiệu ứng `{etype}` được ghi nhận (combat sẽ kích hoạt khi hệ đó mở đầy đủ)")
 
         # permanent side effects on stats
         for se in pill.get("side_effects") or []:

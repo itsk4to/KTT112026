@@ -193,8 +193,10 @@ def render_cultivate_card(
     stamina: int,
     max_stamina: int,
     advanced: bool,
+    ticks: int = 1,
+    hint: str = "",
 ) -> bytes:
-    W, H = 520, 240
+    W, H = 520, 270 if hint else 240
     img = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(img)
     title_f = _font(24, bold=True)
@@ -204,10 +206,17 @@ def render_cultivate_card(
     title = "Tiểu Cảnh Giới đột phá!" if advanced else "Tu Luyện"
     draw.text((28, 28), title, font=title_f, fill=GOLD)
     draw.text((28, 64), f"{name} · {realm}", font=body_f, fill=TEXT)
-    draw.text((28, 100), f"+{gain:,} Tu Vi", font=body_f, fill=(120, 200, 140))
+    times = f"  (×{ticks} lượt)" if ticks > 1 else ""
+    draw.text((28, 100), f"+{gain:,} Tu Vi{times}", font=body_f, fill=(120, 200, 140))
     draw.text((28, 130), f"Tu Vi  {cultivation:,} / {need:,}", font=small_f, fill=MUTED)
-    _bar(draw, 28, 154, 460, 16, cultivation / need if need else 0)
+    full = bool(need) and cultivation >= need
+    # GDD: thanh Viên Mãn 100% chuyển sang cam-đỏ để cảnh báo cần đột phá
+    _bar(draw, 28, 154, 460, 16, cultivation / need if need else 0, fill=(240, 110, 50) if full else BAR_FILL)
     draw.text((28, 185), f"Thể lực  {stamina}/{max_stamina}", font=small_f, fill=MUTED)
+    if hint:
+        draw.text((28, 215), hint[:62], font=small_f, fill=GOLD)
+        if len(hint) > 62:
+            draw.text((28, 235), hint[62:124], font=small_f, fill=GOLD)
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
@@ -315,8 +324,21 @@ def render_shop_buy_result(*, ok: bool, title: str, detail: str) -> bytes:
     return buf.getvalue()
 
 
-def render_dokiep_card(*, round_no: int, shields: int, message: str, options: list[str] | None = None, finished: bool = False, success: bool = False) -> bytes:
-    W, H = 640, 340 if not finished else 220
+def render_dokiep_card(
+    *,
+    round_no: int,
+    shields: int,
+    message: str,
+    options: list[str] | None = None,
+    finished: bool = False,
+    success: bool = False,
+    removed: list[int] | None = None,
+    notes: list[str] | None = None,
+) -> bytes:
+    removed = removed or []
+    notes = notes or []
+    W = 640
+    H = 220 if finished else 340 + 22 * len(notes)
     img = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(img)
     title_f = _font(24, bold=True)
@@ -335,9 +357,14 @@ def render_dokiep_card(*, round_no: int, shields: int, message: str, options: li
         y = 130
         labels = ["①", "②", "③"]
         for i, opt in enumerate(options or []):
-            draw.rounded_rectangle((24, y, W - 24, y + 44), radius=8, fill=(36, 40, 58))
-            draw.text((36, y + 12), f"{labels[i]}  {opt}", font=small_f, fill=TEXT)
+            gone = i in removed
+            draw.rounded_rectangle((24, y, W - 24, y + 44), radius=8, fill=(28, 28, 36) if gone else (36, 40, 58))
+            text = f"{labels[i]}  {opt}" if not gone else f"{labels[i]}  ✗ Đã bị loại"
+            draw.text((36, y + 12), text, font=small_f, fill=MUTED if gone else TEXT)
             y += 52
+        for note in notes:
+            draw.text((28, y + 4), note[:72], font=small_f, fill=GOLD)
+            y += 22
         draw.text((28, H - 36), "Bấm nút 1 / 2 / 3 bên dưới", font=small_f, fill=MUTED)
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
@@ -388,3 +415,69 @@ def render_tower_card(*, floor: int, risk: str, stones: int, cult: int, alive: b
 
 def render_simple_result(*, title: str, detail: str, ok: bool = True) -> bytes:
     return render_shop_buy_result(ok=ok, title=title, detail=detail)
+
+
+def _wrap(text: str, width: int) -> list[str]:
+    import textwrap
+    return textwrap.wrap(text, width=width, break_long_words=False) or [""]
+
+
+def render_help_card(
+    *,
+    title: str,
+    rows: list[tuple[str, str]],
+    tip: str = "",
+    header: list[tuple[str, str]] | None = None,
+    footer: str = "",
+) -> bytes:
+    """Thẻ `.help`: lệnh (vàng) + mô tả. Lệnh dài hơn cột thì mô tả xuống dòng bên dưới."""
+    W, X_CMD, X_DESC = 640, 28, 232
+    title_f, cmd_f, body_f, small_f = _font(24, bold=True), _font(15, bold=True), _font(15), _font(14)
+    probe = ImageDraw.Draw(Image.new("RGB", (4, 4)))
+    col_w = X_DESC - X_CMD - 12
+
+    # layout: (cmd, desc_lines, stacked)
+    items: list[tuple[str, list[str], bool]] = []
+    for cmd, desc in rows:
+        stacked = probe.textlength(cmd, font=cmd_f) > col_w
+        items.append((cmd, _wrap(desc, 66 if stacked else 40), stacked))
+
+    head = header or []
+    tip_lines = _wrap(tip, 66) if tip else []
+    H = 70 + (len(head) * 24 + 14 if head else 0)
+    for _, lines, stacked in items:
+        H += (20 if stacked else 0) + max(1, len(lines)) * 20 + 10
+    H += (len(tip_lines) * 18 + 24 if tip_lines else 0) + (30 if footer else 0) + 24
+
+    img = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle((12, 12, W - 12, H - 12), radius=16, fill=PANEL)
+    draw.text((X_CMD, 26), title, font=title_f, fill=GOLD)
+    y = 70
+    for num, line in head:
+        draw.text((X_CMD, y), f"{num}.  {line}", font=body_f, fill=TEXT)
+        y += 24
+    if head:
+        y += 14
+    for cmd, lines, stacked in items:
+        draw.text((X_CMD, y), cmd, font=cmd_f, fill=GOLD)
+        if stacked:
+            y += 20
+            x = X_CMD + 14
+        else:
+            x = X_DESC
+        for i, ln in enumerate(lines):
+            draw.text((x, y + i * 20), ln, font=body_f, fill=TEXT)
+        y += max(1, len(lines)) * 20 + 10
+    if tip_lines:
+        y += 6
+        draw.line((X_CMD, y, W - 28, y), fill=(60, 66, 90), width=1)
+        y += 12
+        for ln in tip_lines:
+            draw.text((X_CMD, y), ln, font=small_f, fill=MUTED)
+            y += 18
+    if footer:
+        draw.text((X_CMD, H - 44), footer, font=small_f, fill=MUTED)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()

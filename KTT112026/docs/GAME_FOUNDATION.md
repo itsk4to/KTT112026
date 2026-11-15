@@ -10,7 +10,10 @@ Game gửi **ảnh PNG** (Pillow), không dùng embed cho hồ sơ / tu luyện.
 |------|------|
 | `.taothe` | Tạo nhân vật, random linh căn + 5 chỉ số |
 | `.me` | Thẻ nhân vật (ảnh) |
-| `.tu` | Tu luyện (cooldown ~4s, tốn thể lực) |
+| `.tu [n\|max]` | Tu luyện gộp lệnh (cooldown ~4s, tốn thể lực) |
+| `.dp` | Đột phá tiểu cảnh giới (Cấp 2+), có tỷ lệ |
+| `.dokiep` | Độ Kiếp 5 vòng, có hỗ trợ Khí Vận / đan / Đạo Lữ |
+| `.daugia` | Sàn đấu giá giá cố định |
 
 ## Chỉ số (GDD)
 Căn Cốt · Ngộ Tính · Thần Thức · Thân Pháp · Khí Vận

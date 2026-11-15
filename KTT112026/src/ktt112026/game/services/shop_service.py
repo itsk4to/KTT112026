@@ -1,6 +1,7 @@
 """System shop — catalog filtered by player realm/path."""
 from __future__ import annotations
 
+from ktt112026.game.services._tx import atomic
 from ktt112026.game.content.shop import find_item, get_catalog
 from ktt112026.game.repo.players import PlayerRepository
 
@@ -39,6 +40,7 @@ class ShopService:
             out.append(row)
         return out
 
+    @atomic
     def buy(self, user_id: str, item_id: str, qty: int = 1) -> dict:
         qty = max(1, min(99, int(qty)))
         found = find_item(item_id)

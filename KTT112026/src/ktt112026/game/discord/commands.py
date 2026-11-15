@@ -10,9 +10,10 @@ from discord.ext import commands
 from ktt112026.game.services.dokiep_service import DokiepService
 from ktt112026.game.services.inventory_service import InventoryService
 from ktt112026.game.services.item_use_service import ItemUseService
-from ktt112026.game.services.player_service import PlayerService
+from ktt112026.game.services.player_service import MAX_BATCH, PlayerService
 from ktt112026.game.services.shop_service import ShopService
 from ktt112026.game.services.alchemy_service import AlchemyService
+from ktt112026.game.services.auction_service import AuctionService
 from ktt112026.game.services.economy_service import EconomyService
 from ktt112026.game.services.leaderboard_service import LeaderboardService
 from ktt112026.game.services.partner_service import PartnerService
@@ -22,12 +23,14 @@ from ktt112026.game.services.pet_service import PetService
 from ktt112026.game.services.stats_service import StatsService
 from ktt112026.game.services.technique_service import TechniqueService
 from ktt112026.game.services.tower_service import TowerService
+from ktt112026.game.content.help import QUICK_START, TOPICS, overview_rows, resolve_topic
 from ktt112026.game.content.shop import resolve_category
 from ktt112026.game.render.cards import (
     render_bag_card,
     render_create_card,
     render_cultivate_card,
     render_dokiep_card,
+    render_help_card,
     render_profile_card,
     render_shop_buy_result,
     render_simple_result,
@@ -39,6 +42,11 @@ from ktt112026.game.discord.tower_view import TowerView
 
 logger = logging.getLogger("ktt.game.commands")
 
+
+HELP_NEWBIE = (
+    "**Chào đạo hữu!** Bắt đầu: `.tu` (hoặc `.tu 5`, `.tu max`) để tu luyện, `.me` xem thẻ nhân vật, "
+    "`.thap` thử Đăng Thiên Tháp. Gõ `.help` để xem toàn bộ lệnh."
+)
 
 class GameCommands(commands.Cog):
     def __init__(
@@ -59,6 +67,7 @@ class GameCommands(commands.Cog):
         economy: EconomyService,
         partners: PartnerService,
         leaderboard: LeaderboardService,
+        auction: AuctionService,
     ) -> None:
         self.bot = bot
         self.players = players
@@ -76,6 +85,7 @@ class GameCommands(commands.Cog):
         self.economy = economy
         self.partners = partners
         self.leaderboard = leaderboard
+        self.auction = auction
 
     async def _img(self, ctx: commands.Context, png: bytes, name: str = "card.png", view=None) -> None:
         file = discord.File(BytesIO(png), filename=name)
@@ -89,6 +99,7 @@ class GameCommands(commands.Cog):
             await ctx.reply(str(exc), mention_author=False)
             return
         await self._img(ctx, render_create_card(player), "taothe.png")
+        await ctx.send(HELP_NEWBIE, delete_after=120)
 
     @commands.command(name="me", aliases=("info", "the"))
     async def me(self, ctx: commands.Context) -> None:
@@ -132,9 +143,18 @@ class GameCommands(commands.Cog):
         await self._img(ctx, png, "me.png")
 
     @commands.command(name="tu", aliases=("tuluyen",))
-    async def tu(self, ctx: commands.Context) -> None:
+    async def tu(self, ctx: commands.Context, times: str = "1") -> None:
+        """`.tu` · `.tu 5` · `.tu max` — gộp nhiều lượt tu luyện trong một lệnh."""
+        t = times.strip().lower()
+        if t in ("max", "all", "het"):
+            n = MAX_BATCH
+        elif t.isdigit() and int(t) >= 1:
+            n = int(t)
+        else:
+            await ctx.reply("Dùng `.tu`, `.tu <số_lần>` hoặc `.tu max`.", mention_author=False)
+            return
         try:
-            result = self.players.cultivate(str(ctx.author.id))
+            result = self.players.cultivate(str(ctx.author.id), n)
         except ValueError as exc:
             await ctx.reply(str(exc), mention_author=False)
             return
@@ -145,10 +165,59 @@ class GameCommands(commands.Cog):
                 name=p.display_name, realm=result["realm"], gain=result["gain"],
                 cultivation=result["cultivation"], need=result["need"],
                 stamina=result["stamina"], max_stamina=result["max_stamina"],
-                advanced=result["advanced"],
+                advanced=result["advanced"], ticks=result["ticks"], hint=result["hint"],
             ),
             "tu.png",
         )
+
+    @commands.command(name="dp", aliases=("dotpha",))
+    async def dp(self, ctx: commands.Context) -> None:
+        """Đột phá Tiểu Cảnh Giới (Cấp 2+) khi Tu Vi đầy 100%."""
+        try:
+            r = self.players.breakthrough_minor(str(ctx.author.id))
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Chưa đột phá được", detail=str(exc), ok=False))
+            return
+        if r["success"]:
+            detail = f"Thành công ({r['chance']*100:.0f}%) → {r['realm']}"
+            await self._img(ctx, render_simple_result(title="Đột Phá Thành Công", detail=detail))
+        else:
+            detail = f"Thất bại ({r['chance']*100:.0f}%) — mất {r['loss_pct']}% mốc Tu Vi, `.tu` rồi `.dp` lại"
+            await self._img(ctx, render_simple_result(title="Đột Phá Thất Bại", detail=detail, ok=False))
+
+    @commands.command(name="hoithe", aliases=("muathe",))
+    async def hoithe(self, ctx: commands.Context) -> None:
+        try:
+            r = self.players.buy_stamina(str(ctx.author.id))
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Không mua được", detail=str(exc), ok=False))
+            return
+        detail = (
+            f"+{r['gained']} Thể Lực ({r['stamina']}/{r['max_stamina']}) · -{r['cost']:,} LS · "
+            f"còn {r['left_today']} lượt hôm nay"
+        )
+        await self._img(ctx, render_simple_result(title="Hồi Thể Lực", detail=detail))
+
+    @commands.command(name="help", aliases=("huongdan", "lenh", "h"))
+    async def help_cmd(self, ctx: commands.Context, *, topic: str | None = None) -> None:
+        """`.help` tổng quan · `.help <chủ_đề>` hoặc `.help <lệnh>` chi tiết (vd `.help dokiep`, `.help daugia`)."""
+        key = resolve_topic(topic)
+        if key is not None:
+            t = TOPICS[key]
+            png = render_help_card(
+                title=t["title"], rows=t["rows"], tip=t["tip"],
+                footer="Gõ .help để về danh sách chủ đề",
+            )
+            await self._img(ctx, png, "help.png")
+            return
+        note = f"Không có chủ đề “{topic.strip()[:20]}”. " if topic else ""
+        png = render_help_card(
+            title="Đạo Lộ Tu Tiên · Hướng dẫn",
+            header=QUICK_START,
+            rows=overview_rows(),
+            tip=note + "Gõ .help <chủ_đề> hoặc .help <lệnh> để xem chi tiết.",
+        )
+        await self._img(ctx, png, "help.png")
 
     @commands.command(name="chon")
     async def chon(self, ctx: commands.Context, path: str | None = None) -> None:
@@ -187,6 +256,7 @@ class GameCommands(commands.Cog):
         png = render_dokiep_card(
             round_no=prompt["round"], shields=prompt["shields"],
             message="Chọn một phương án hộ pháp.", options=prompt["options"],
+            removed=prompt["removed"], notes=prompt["support_notes"][:2] + prompt["notes"],
         )
         view = DokiepView(self.dokiep, ctx.author.id)
         await self._img(ctx, png, "dokiep.png", view=view)
@@ -453,6 +523,72 @@ class GameCommands(commands.Cog):
         )
         await self._img(ctx, render_simple_result(title="Song Tu", detail=detail[:150]))
 
+    @commands.group(name="daugia", aliases=("dg",), invoke_without_command=True)
+    async def daugia(self, ctx: commands.Context) -> None:
+        rows = self.auction.list_open(10)
+        if not rows:
+            await ctx.reply(
+                "Sàn trống. Đăng bán: `.daugia ban <ma_do> <sl> <gia>`", mention_author=False
+            )
+            return
+        lines = [
+            f"`#{r['id']}` {r['name']} ×{r['quantity']} — **{r['price']:,}** LS (còn ~{r['minutes_left']}p)"
+            for r in rows
+        ]
+        await ctx.reply(
+            "**Sàn Đấu Giá**\n" + "\n".join(lines)
+            + "\nMua: `.daugia mua <id>` · Hủy: `.daugia huy <id>` · Của tôi: `.daugia cua`",
+            mention_author=False,
+        )
+
+    @daugia.command(name="ban")
+    async def daugia_ban(self, ctx: commands.Context, item_id: str | None = None,
+                         qty: int | None = None, price: int | None = None) -> None:
+        if not item_id or qty is None or price is None:
+            await ctx.reply("`.daugia ban <ma_do> <so_luong> <gia_ca_lo>`", mention_author=False)
+            return
+        try:
+            r = self.auction.create(str(ctx.author.id), item_id, qty, price)
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Đăng bán thất bại", detail=str(exc), ok=False))
+            return
+        detail = f"#{r['id']} {r['name']} ×{r['qty']} giá {r['price']:,} LS · phí {r['fee_pct']}% khi bán · 24h"
+        await self._img(ctx, render_simple_result(title="Đã lên sàn", detail=detail))
+
+    @daugia.command(name="mua")
+    async def daugia_mua(self, ctx: commands.Context, auction_id: int | None = None) -> None:
+        if auction_id is None:
+            await ctx.reply("`.daugia mua <id>`", mention_author=False)
+            return
+        try:
+            r = self.auction.buy(str(ctx.author.id), auction_id)
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Mua thất bại", detail=str(exc), ok=False))
+            return
+        detail = f"{r['name']} ×{r['qty']} · -{r['price']:,} LS · còn {r['stones_left']:,} LS"
+        await self._img(ctx, render_simple_result(title="Mua trên sàn", detail=detail))
+
+    @daugia.command(name="huy")
+    async def daugia_huy(self, ctx: commands.Context, auction_id: int | None = None) -> None:
+        if auction_id is None:
+            await ctx.reply("`.daugia huy <id>`", mention_author=False)
+            return
+        try:
+            r = self.auction.cancel(str(ctx.author.id), auction_id)
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Hủy thất bại", detail=str(exc), ok=False))
+            return
+        await self._img(ctx, render_simple_result(title="Đã hạ lô", detail=f"{r['name']} ×{r['qty']} về túi"))
+
+    @daugia.command(name="cua", aliases=("my", "cuatoi"))
+    async def daugia_cua(self, ctx: commands.Context) -> None:
+        rows = self.auction.list_open(10, seller_id=str(ctx.author.id))
+        if not rows:
+            await ctx.reply("Đạo hữu chưa có lô nào trên sàn.", mention_author=False)
+            return
+        lines = [f"`#{r['id']}` {r['name']} ×{r['quantity']} — {r['price']:,} LS" for r in rows]
+        await ctx.reply("**Lô của tôi**\n" + "\n".join(lines), mention_author=False)
+
     @commands.command(name="shop")
     async def shop(self, ctx: commands.Context, category: str | None = None, page: int = 1) -> None:
         cat = resolve_category(category) if category else None
@@ -501,10 +637,11 @@ async def setup_game(
     economy: EconomyService,
     partners: PartnerService,
     leaderboard: LeaderboardService,
+    auction: AuctionService,
 ) -> None:
     await bot.add_cog(
         GameCommands(
             bot, players, shop, dokiep, tower, inventory, items, techniques, stats,
-            pets, exploration, gather, alchemy, economy, partners, leaderboard,
+            pets, exploration, gather, alchemy, economy, partners, leaderboard, auction,
         )
     )

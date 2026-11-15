@@ -7,6 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from ktt112026.game.services._tx import atomic
 from ktt112026.game.content.loader import load_linhthu
 from ktt112026.game.repo.players import PlayerRepository
 
@@ -36,6 +37,7 @@ class PetService:
     def rates(self) -> dict[str, float]:
         return dict(_summon_cfg().get("rates") or {})
 
+    @atomic
     def summon(self, user_id: str, times: int = 1) -> dict[str, Any]:
         multi = int(_summon_cfg().get("multi_pull", 10))
         times = multi if int(times) >= multi else 1
@@ -93,6 +95,7 @@ class PetService:
             })
         return out
 
+    @atomic
     def deploy(self, user_id: str, pet_id: str) -> str:
         pet_id = pet_id.strip().lower()
         if pet_id not in self._by_id:
@@ -117,6 +120,7 @@ class PetService:
                 return self._by_id[pet_id]["name"]
         raise ValueError("Đã đủ 3 linh thú xuất chiến — `.thuve <ma>` để thu về.")
 
+    @atomic
     def recall(self, user_id: str, pet_id: str) -> str:
         pet_id = pet_id.strip().lower()
         p = self.repo.get(str(user_id))

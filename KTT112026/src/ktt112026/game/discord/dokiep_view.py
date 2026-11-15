@@ -18,6 +18,15 @@ class DokiepView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.service = service
         self.owner_id = owner_id
+        sess = service.session(str(owner_id))
+        if sess is not None:
+            self.sync_removed(sess.current_hint()["removed"])
+
+    def sync_removed(self, removed: list[int]) -> None:
+        """Khóa nút của đáp án đã bị loại ở vòng hiện tại."""
+        for i, c in enumerate(self.children[:3]):
+            if isinstance(c, discord.ui.Button):
+                c.disabled = i in removed
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:
@@ -43,9 +52,11 @@ class DokiepView(discord.ui.View):
             await interaction.response.edit_message(attachments=[_file(png)], view=self)
             return
         prompt = sess.prompt()
+        self.sync_removed(prompt["removed"])
         png = render_dokiep_card(
             round_no=prompt["round"], shields=prompt["shields"],
             message=result["message"], options=prompt["options"],
+            removed=prompt["removed"], notes=prompt["notes"],
         )
         await interaction.response.edit_message(attachments=[_file(png)], view=self)
 

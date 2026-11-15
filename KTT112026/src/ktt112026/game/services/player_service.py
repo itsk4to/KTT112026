@@ -3,14 +3,27 @@ from __future__ import annotations
 
 import random
 import time
+from datetime import date
 
 from ktt112026.game.content.realms import STAMINA_BY_MAJOR, realm_display, stage_requirement
 from ktt112026.game.models.player import Player, PlayerStats
-from ktt112026.game.rules import can_auto_advance_minor, cultivation_gain
+from ktt112026.game.rules import (
+    DP_FAIL_LOSS_PCT,
+    can_auto_advance_minor,
+    cultivation_gain,
+    minor_breakthrough_chance,
+    minor_needs_breakthrough,
+)
+from ktt112026.game.rules.stamina import REGEN_INTERVAL_SECONDS
 from ktt112026.game.repo.players import PlayerRepository
+from ktt112026.game.services._tx import atomic
 
 CULTIVATE_COOLDOWN = 4.0
 CULTIVATE_STAMINA_COST = 2
+MAX_BATCH = 20  # .tu max
+STAMINA_BUY_PER_DAY = 5
+STAMINA_BUY_AMOUNT = 30
+STAMINA_BUY_COST_PER_MAJOR = 200  # Linh Thạch × đại cảnh giới
 _QUALITY_WEIGHTS = [("tap", 45), ("chan", 35), ("dia", 14), ("thien", 5), ("hon_don", 1)]
 _SYSTEM_WEIGHTS = [
     ("kim", 14), ("moc", 14), ("thuy", 14), ("hoa", 14), ("tho", 14),
@@ -105,7 +118,22 @@ class PlayerService:
         self.repo.save(p)
         return p
 
-    def cultivate(self, user_id: str) -> dict:
+    @staticmethod
+    def is_locked(p: Player) -> bool:
+        """GDD 100% Lock: đầy thanh thì khóa `.tu` (Cấp 1 tiểu cảnh tự lên nên không khóa)."""
+        need = stage_requirement(p.major_realm, p.minor_stage)
+        if p.cultivation < need:
+            return False
+        return not (p.major_realm == 1 and p.minor_stage < 2)
+
+    @staticmethod
+    def lock_message(p: Player) -> str:
+        if p.minor_stage >= 2:
+            return "Hậu Kỳ viên mãn 100% — hãy `.dokiep` để tiến Đại Cảnh Giới."
+        return "Tu Vi đầy 100% — gõ `.dp` để đột phá Tiểu Cảnh Giới rồi mới tu tiếp."
+
+    def cultivate(self, user_id: str, times: int = 1) -> dict:
+        """`.tu [số_lần|max]` — gộp nhiều lượt trong một lệnh, cooldown tính một lần."""
         player = self.repo.get(str(user_id))
         if player is None:
             raise ValueError("Chưa có thể đạo. Gõ `.taothe` trước.")
@@ -113,42 +141,117 @@ class PlayerService:
         elapsed = now - float(player.last_cultivate_at or 0)
         if elapsed < CULTIVATE_COOLDOWN:
             raise ValueError(f"Đang điều tức. Còn **{CULTIVATE_COOLDOWN - elapsed:.1f}s** mới `.tu` tiếp.")
+        if self.is_locked(player):
+            raise ValueError(self.lock_message(player))
         if player.stamina < CULTIVATE_STAMINA_COST:
-            raise ValueError("Thể lực không đủ. Dùng đan hồi thể lực hoặc chờ (sẽ có hồi theo thời gian).")
-        need = stage_requirement(player.major_realm, player.minor_stage)
-        if player.minor_stage >= 2 and player.cultivation >= need:
-            raise ValueError("Hậu Kỳ viên mãn — hãy `.dokiep` để tiến Đại Cảnh Giới.")
-        gain = cultivation_gain(
-            ngo_tinh=player.stats.ngo_tinh,
-            root_quality=player.root_quality,
-            major_realm=player.major_realm,
-        )
-        # path bonus for matching root
-        if player.path == "tien" and player.root_system == "quang":
-            gain = int(gain * 1.1)
-        if player.path == "ma" and player.root_system == "am":
-            gain = int(gain * 1.1)
-        if player.cultivate_bonus_charges > 0 and player.cultivate_bonus_pct > 0:
-            gain = int(gain * (1 + player.cultivate_bonus_pct / 100.0))
-            player.cultivate_bonus_charges -= 1
-            if player.cultivate_bonus_charges <= 0:
-                player.cultivate_bonus_pct = 0
-        # light economy: small stone drip while cultivating
-        player.spirit_stones += max(1, 2 + player.major_realm)
-        player.cultivation = min(need, player.cultivation + gain)
-        player.stamina -= CULTIVATE_STAMINA_COST
-        player.last_cultivate_at = now
+            mins = int(REGEN_INTERVAL_SECONDS // 60)
+            raise ValueError(
+                f"Thể lực không đủ. Tự hồi 1 điểm / {mins} phút (kể cả khi offline), "
+                "hoặc dùng đan / `.hoithe`."
+            )
+        times = max(1, min(MAX_BATCH, int(times)))
+
+        total_gain = 0
+        ticks = 0
         advanced = False
-        if can_auto_advance_minor(player.cultivation, player.major_realm, player.minor_stage):
-            player.minor_stage += 1
-            player.cultivation = 0
-            advanced = True
+        for _ in range(times):
+            if player.stamina < CULTIVATE_STAMINA_COST or self.is_locked(player):
+                break
+            need = stage_requirement(player.major_realm, player.minor_stage)
+            gain = cultivation_gain(
+                ngo_tinh=player.stats.ngo_tinh,
+                root_quality=player.root_quality,
+                major_realm=player.major_realm,
+            )
+            if player.path == "tien" and player.root_system == "quang":
+                gain = int(gain * 1.1)
+            if player.path == "ma" and player.root_system == "am":
+                gain = int(gain * 1.1)
+            if player.cultivate_bonus_charges > 0 and player.cultivate_bonus_pct > 0:
+                gain = int(gain * (1 + player.cultivate_bonus_pct / 100.0))
+                player.cultivate_bonus_charges -= 1
+                if player.cultivate_bonus_charges <= 0:
+                    player.cultivate_bonus_pct = 0
+            player.spirit_stones += max(1, 2 + player.major_realm)
+            before = player.cultivation
+            player.cultivation = min(need, player.cultivation + gain)
+            total_gain += player.cultivation - before
+            player.stamina -= CULTIVATE_STAMINA_COST
+            ticks += 1
+            if player.major_realm == 1 and can_auto_advance_minor(
+                player.cultivation, player.major_realm, player.minor_stage
+            ):
+                player.minor_stage += 1
+                player.cultivation = 0
+                advanced = True
+        player.last_cultivate_at = now
         self.repo.save(player)
+
+        locked = self.is_locked(player)
+        hint = self.lock_message(player) if locked else ""
+        if not hint and advanced and player.minor_stage >= 2 and not player.path:
+            hint = "Đã tới Hậu Kỳ — hãy chọn đạo lộ: `.chon tien` hoặc `.chon ma` trước khi Độ Kiếp."
         new_need = stage_requirement(player.major_realm, player.minor_stage)
         return {
-            "gain": gain, "cultivation": player.cultivation, "need": new_need,
-            "stamina": player.stamina, "max_stamina": player.max_stamina,
-            "advanced": advanced,
+            "gain": total_gain, "ticks": ticks, "cultivation": player.cultivation,
+            "need": new_need, "stamina": player.stamina, "max_stamina": player.max_stamina,
+            "advanced": advanced, "locked": locked, "hint": hint,
             "realm": realm_display(player.major_realm, player.minor_stage, player.path),
             "player": player,
+        }
+
+    @atomic
+    def breakthrough_minor(self, user_id: str) -> dict:
+        """`.dp` — đột phá Tiểu Cảnh Giới (Cấp 2+): tỷ lệ theo Ngộ Tính / Căn Cốt."""
+        p = self.repo.get(str(user_id))
+        if p is None:
+            raise ValueError("Chưa có thể đạo. Gõ `.taothe` trước.")
+        if p.minor_stage >= 2:
+            raise ValueError("Đã Hậu Kỳ — dùng `.dokiep` để lên Đại Cảnh Giới.")
+        if not minor_needs_breakthrough(p.major_realm):
+            raise ValueError("Cấp 1 tự động lên Tiểu Cảnh Giới khi đầy Tu Vi — cứ `.tu`.")
+        need = stage_requirement(p.major_realm, p.minor_stage)
+        if p.cultivation < need:
+            raise ValueError(f"Tu Vi chưa đầy ({p.cultivation:,}/{need:,}).")
+        chance = minor_breakthrough_chance(p.stats.ngo_tinh, p.stats.can_cot)
+        success = self.rng.random() < chance
+        if success:
+            p.minor_stage += 1
+            p.cultivation = 0
+        else:
+            p.cultivation = int(need * (100 - DP_FAIL_LOSS_PCT) / 100)
+        self.repo.save(p)
+        return {
+            "success": success, "chance": chance,
+            "realm": realm_display(p.major_realm, p.minor_stage, p.path),
+            "cultivation": p.cultivation,
+            "need": stage_requirement(p.major_realm, p.minor_stage),
+            "loss_pct": 0 if success else DP_FAIL_LOSS_PCT,
+        }
+
+    @atomic
+    def buy_stamina(self, user_id: str) -> dict:
+        """`.hoithe` — mua thêm Thể Lực bằng Linh Thạch, giới hạn mỗi ngày."""
+        p = self.repo.get(str(user_id))
+        if p is None:
+            raise ValueError("Chưa có thể đạo. Gõ `.taothe` trước.")
+        today = date.today().isoformat()
+        used = p.stamina_buy_count if p.stamina_buy_day == today else 0
+        if used >= STAMINA_BUY_PER_DAY:
+            raise ValueError(f"Hôm nay đã mua tối đa {STAMINA_BUY_PER_DAY} lượt hồi Thể Lực.")
+        if p.stamina >= p.max_stamina:
+            raise ValueError("Thể Lực đã đầy.")
+        cost = STAMINA_BUY_COST_PER_MAJOR * p.major_realm
+        if p.spirit_stones < cost:
+            raise ValueError(f"Cần {cost:,} Linh Thạch (đang có {p.spirit_stones:,}).")
+        before = p.stamina
+        p.spirit_stones -= cost
+        p.stamina = min(p.max_stamina, p.stamina + STAMINA_BUY_AMOUNT)
+        p.stamina_buy_day = today
+        p.stamina_buy_count = used + 1
+        self.repo.save(p)
+        return {
+            "gained": p.stamina - before, "cost": cost, "stamina": p.stamina,
+            "max_stamina": p.max_stamina, "left_today": STAMINA_BUY_PER_DAY - p.stamina_buy_count,
+            "stones": p.spirit_stones,
         }

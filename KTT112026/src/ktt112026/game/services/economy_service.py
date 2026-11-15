@@ -1,6 +1,7 @@
 """Transfer LS + sell to NPC."""
 from __future__ import annotations
 
+from ktt112026.game.services._tx import atomic
 from ktt112026.game.content.loader import catalog_by_id
 from ktt112026.game.repo.players import PlayerRepository
 
@@ -20,6 +21,7 @@ class EconomyService:
         self.repo = repo
         self.items = catalog_by_id()
 
+    @atomic
     def transfer(self, from_id: str, to_id: str, amount: int) -> dict:
         amount = int(amount)
         if amount <= 0:
@@ -45,6 +47,7 @@ class EconomyService:
             "to_left": recv.spirit_stones,
         }
 
+    @atomic
     def sell_npc(self, user_id: str, item_id: str, qty: int = 1) -> dict:
         item_id = item_id.strip().lower()
         qty = max(1, min(99, int(qty)))

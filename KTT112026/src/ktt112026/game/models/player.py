@@ -82,6 +82,9 @@ class Player:
     last_bicanh_at: float = 0.0
     partner_id: str = ""
     last_songtu_at: float = 0.0
+    last_stamina_at: float = 0.0
+    stamina_buy_day: str = ""
+    stamina_buy_count: int = 0
     created_at: int = 0
     updated_at: int = 0
 

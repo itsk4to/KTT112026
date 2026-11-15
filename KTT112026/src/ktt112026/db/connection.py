@@ -13,6 +13,7 @@ class Database:
         self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA foreign_keys=ON")
+        self._depth = 0
 
     def execute(self, sql: str, params: tuple[Any, ...] | list[Any] = ()) -> sqlite3.Cursor:
         return self._conn.execute(sql, params)
@@ -24,16 +25,25 @@ class Database:
         return list(self._conn.execute(sql, params).fetchall())
 
     def commit(self) -> None:
-        self._conn.commit()
+        """Commit unless inside `transaction()` (then the outermost block commits)."""
+        if self._depth == 0:
+            self._conn.commit()
 
     @contextmanager
     def transaction(self) -> Iterator[None]:
+        """Atomic block: every write inside commits together or rolls back together."""
+        self._depth += 1
         try:
             yield
-            self._conn.commit()
-        except Exception:
-            self._conn.rollback()
+        except BaseException:
+            self._depth -= 1
+            if self._depth == 0:
+                self._conn.rollback()
             raise
+        else:
+            self._depth -= 1
+            if self._depth == 0:
+                self._conn.commit()
 
     def close(self) -> None:
         self._conn.close()
