@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "items": [
+    {"id": "hotamkinh", "name": "Thanh Đồng Hộ Tâm Kính", "path": "tien", "major_min": 1, "stage_min": 0, "price": 600, "desc": "+60 DEF, +5 Căn Cốt | -3 Thân Pháp", "bonuses": {"def": 60, "can_cot": 5}, "penalties": {"than_phap": -3}},
+    {"id": "quyluandang", "name": "U Minh Quỷ Hỏa Đăng", "path": "ma", "major_min": 1, "stage_min": 0, "price": 600, "desc": "+70 ATK, +5 Thần Thức | -3 Căn Cốt", "bonuses": {"atk": 70, "than_thuc": 5}, "penalties": {"can_cot": -3}},
+    {"id": "tulinhngocboi", "name": "Tụ Linh Ngọc Bội", "path": "tien", "major_min": 1, "stage_min": 2, "price": 1800, "desc": "+8% Tu Vi .tu, +6 Ngộ | -4 Căn Cốt", "bonuses": {"cultivate_pct": 8, "ngo_tinh": 6}, "penalties": {"can_cot": -4}},
+    {"id": "phehuyetluan", "name": "Phệ Huyết Ma Luân", "path": "ma", "major_min": 1, "stage_min": 2, "price": 1800, "desc": "+8% Hút Máu, +5% Bạo | -4 Khí Vận", "bonuses": {"lifesteal_pct": 8, "crit_pct": 5}, "penalties": {"khi_van": -4}},
+    {"id": "huyenvugiap", "name": "Huyền Vũ Quy Giáp", "path": "tien", "major_min": 2, "stage_min": 0, "price": 6000, "desc": "+150 DEF, +15 Căn Cốt | -12 Thân Pháp", "bonuses": {"def": 150, "can_cot": 15}, "penalties": {"than_phap": -12}},
+    {"id": "tubauphap", "name": "Tụ Bảo Ma Bồn", "path": "ma", "major_min": 2, "stage_min": 0, "price": 8500, "desc": "+20 Khí Vận, +10% LS rơi | -10% ATK/DEF", "bonuses": {"khi_van": 20, "drop_stones_pct": 10}, "penalties": {"atk_pct": -10, "def_pct": -10}},
+    {"id": "truyphongdang", "name": "Truy Phong Linh Đang", "path": "tien", "major_min": 2, "stage_min": 2, "price": 14000, "desc": "+18 Thân Pháp, +12% Né | -8 Căn Cốt", "bonuses": {"than_phap": 18, "dodge_pct": 12}, "penalties": {"can_cot": -8}},
+    {"id": "huyethonky", "name": "Huyết Hồn Phiên Kỳ", "path": "ma", "major_min": 3, "stage_min": 0, "price": 45000, "desc": "+18% Hút Máu, +15% Bạo | -18 Khí Vận", "bonuses": {"lifesteal_pct": 18, "crit_pct": 15}, "penalties": {"khi_van": -18}},
+    {"id": "cuuthienloian", "name": "Cửu Thiên Lôi Ấn", "path": "tien", "major_min": 3, "stage_min": 0, "price": 40000, "desc": "+25% sát thương kỹ năng, +15 Thức | -15% HP", "bonuses": {"skill_damage_pct": 25, "than_thuc": 15}, "penalties": {"hp_pct": -15}},
+    {"id": "batquailo", "name": "Bát Quái Tử Kim Lô", "path": "tien", "major_min": 3, "stage_min": 2, "price": 45000, "desc": "+18 Ngộ, +15% Luyện Đan | -12% ATK", "bonuses": {"ngo_tinh": 18, "alchemy_pct": 15}, "penalties": {"atk_pct": -12}},
+    {"id": "tranhonchung", "name": "Trấn Hồn Chuông Vàng", "path": "ma", "major_min": 4, "stage_min": 0, "price": 220000, "desc": "+24 Thần Thức, +35% sát thương Linh Thú | -15 Thân Pháp", "bonuses": {"than_thuc": 24, "pet_damage_pct": 35}, "penalties": {"than_phap": -15}},
+    {"id": "thienmalaban", "name": "Thiên Ma La Bàn", "path": "ma", "major_min": 4, "stage_min": 2, "price": 250000, "desc": "+28 Khí Vận, +15% đồ hiếm bí cảnh | -15% DEF", "bonuses": {"khi_van": 28, "rare_drop_pct": 15}, "penalties": {"def_pct": -15}},
+    {"id": "kimcangluan", "name": "Kim Cang Bất Hoại Luân", "path": "tien", "major_min": 4, "stage_min": 2, "price": 400000, "desc": "+850 DEF, +22 Cốt, -15% sát thương Lôi Kiếp | -18 Pháp, -10% ATK", "bonuses": {"def": 850, "can_cot": 22, "dokiep_damage_reduce_pct": 15}, "penalties": {"than_phap": -18, "atk_pct": -10}},
+    {"id": "cuulongmatrao", "name": "Cửu Long Ma Hỏa Tráo", "path": "ma", "major_min": 5, "stage_min": 0, "price": 1500000, "desc": "+2,200 ATK, +30% skill, +25 Thức | -22 Cốt, -15% DEF", "bonuses": {"atk": 2200, "skill_damage_pct": 30, "than_thuc": 25}, "penalties": {"can_cot": -22, "def_pct": -15}},
+    {"id": "donghoangchung", "name": "Đông Hoàng Chung (Phỏng Chế)", "path": "tien", "major_min": 6, "stage_min": 0, "price": 3200000, "desc": "+3,500 DEF, +30 Cốt, +1 Hộ Thể Độ Kiếp | -25 Thân Pháp", "bonuses": {"def": 3500, "can_cot": 30, "dokiep_shield": 1}, "penalties": {"than_phap": -25}},
+    {"id": "vanhondinh", "name": "Vạn Hồn Luyện Thần Đỉnh", "path": "ma", "major_min": 6, "stage_min": 0, "price": 3500000, "desc": "+4,200 ATK, +25% Bạo, +20% Hút Máu | -30 Cốt, -20% DEF", "bonuses": {"atk": 4200, "crit_pct": 25, "lifesteal_pct": 20}, "penalties": {"can_cot": -30, "def_pct": -20}}
+  ]
+}

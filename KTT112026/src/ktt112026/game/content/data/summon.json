@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "cost_per_pull": 5000,
+  "multi_pull": 10,
+  "rates": {
+    "pham": 55.0,
+    "linh": 30.0,
+    "than": 12.0,
+    "hon_don": 3.0
+  },
+  "notes": "Triệu hồi ngẫu nhiên 4 bậc (GDD). Giá 5000 LS/lần theo yêu cầu vận hành. Chỉ số từng con lấy từ linhthu.json."
+}

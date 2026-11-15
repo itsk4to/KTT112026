@@ -39,6 +39,7 @@ class Settings:
     max_tts_chars: int = 500
     log_level: str = "INFO"
     sync_commands_on_start: bool = True
+    database_path: str = "data/ktt112026.db"
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
@@ -57,4 +58,5 @@ class Settings:
             max_tts_chars=_positive_int(source, "KTT_MAX_TTS_CHARS", 500),
             log_level=log_level,
             sync_commands_on_start=_bool(source, "KTT_SYNC_COMMANDS_ON_START", True),
+            database_path=source.get("KTT_DATABASE_PATH", "data/ktt112026.db").strip() or "data/ktt112026.db",
         )

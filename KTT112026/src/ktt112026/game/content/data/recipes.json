@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "recipes": [
+    {
+      "id": "tukhidan",
+      "name": "Tụ Khí Đan",
+      "output_id": "tukhidan",
+      "output_qty": 1,
+      "major_min": 1,
+      "ingredients": {"linhthao": 2, "thanhtrucdiep": 1},
+      "base_success": 0.75,
+      "desc": "2 Linh Thảo + 1 Thanh Trúc Diệp"
+    },
+    {
+      "id": "thelucnho",
+      "name": "Tiểu Hoàn Thể Lực Đan",
+      "output_id": "thelucnho",
+      "output_qty": 1,
+      "major_min": 1,
+      "ingredients": {"linhthao": 1, "thanhtrucdiep": 2},
+      "base_success": 0.8,
+      "desc": "1 Linh Thảo + 2 Thanh Trúc Diệp"
+    },
+    {
+      "id": "hotamdan",
+      "name": "Hộ Tâm Đan",
+      "output_id": "hotamdan",
+      "output_qty": 1,
+      "major_min": 1,
+      "ingredients": {"huyenlinhhoa": 2, "loctamthao": 1},
+      "base_success": 0.55,
+      "desc": "2 Huyền Linh Hoa + 1 Lộc Tâm Thảo"
+    },
+    {
+      "id": "hoanglongdan",
+      "name": "Hoàng Long Đan",
+      "output_id": "hoanglongdan",
+      "output_qty": 1,
+      "major_min": 2,
+      "ingredients": {"huyenlinhhoa": 3, "loctamthao": 2},
+      "base_success": 0.5,
+      "desc": "3 Huyền Linh Hoa + 2 Lộc Tâm Thảo"
+    }
+  ]
+}

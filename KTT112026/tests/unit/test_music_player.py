@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from ktt112026.features.voice.music.manager import MusicManager
-from ktt112026.features.voice.music.models import TTSClip, Track
-from ktt112026.features.voice.music.player import GuildMusicPlayer
+from ktt112026.voice.music.manager import MusicManager
+from ktt112026.voice.music.models import TTSClip, Track
+from ktt112026.voice.music.player import GuildMusicPlayer
 
 
 class FakeVoice:
@@ -144,7 +144,7 @@ def test_music_manager_keeps_players_per_guild():
 @pytest.mark.asyncio
 async def test_stale_stream_url_is_refreshed_before_playback(monkeypatch):
     import time
-    import ktt112026.features.voice.music.resolver as resolver
+    import ktt112026.voice.music.resolver as resolver
 
     voice = FakeVoice()
     seen = []

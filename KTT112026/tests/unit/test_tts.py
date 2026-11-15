@@ -1,6 +1,6 @@
 import pytest
 
-from ktt112026.features.voice.tts.service import validate_tts_text
+from ktt112026.voice.tts.service import validate_tts_text
 
 
 def test_tts_text_is_trimmed():
@@ -13,8 +13,8 @@ def test_tts_rejects_empty_and_oversized_text():
     with pytest.raises(ValueError, match="giới hạn"):
         validate_tts_text("12345", 4)
 
-from ktt112026.features.voice.music.models import TTSClip, Track
-import ktt112026.features.voice.tts.service as tts_service
+from ktt112026.voice.music.models import TTSClip, Track
+import ktt112026.voice.tts.service as tts_service
 
 
 class FakePlayer:

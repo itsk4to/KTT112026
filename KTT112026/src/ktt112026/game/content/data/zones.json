@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "zones": [
+    {
+      "id": "linh_cuc",
+      "name": "Linh Cốc Tàn Phong",
+      "major_min": 1,
+      "stage_min": 0,
+      "stamina_cost": 8,
+      "reward_stones": [30, 80],
+      "reward_cultivation": [40, 120],
+      "herb_chance": 0.35,
+      "herbs": ["linhthao", "thanhtrucdiep"],
+      "desc": "Cốc nhỏ còn sót linh khí — phù hợp Luyện Khí / Dẫn Khí"
+    },
+    {
+      "id": "huyen_lam",
+      "name": "Huyền Lâm Cổ Đạo",
+      "major_min": 2,
+      "stage_min": 0,
+      "stamina_cost": 12,
+      "reward_stones": [80, 180],
+      "reward_cultivation": [120, 350],
+      "herb_chance": 0.4,
+      "herbs": ["huyenlinhhoa", "thanhtrucdiep", "loctamthao"],
+      "desc": "Rừng cổ — yêu cầu Trúc Cơ / Ngưng Huyết trở lên"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import pytest
 
-from ktt112026.features.voice.music.resolver import validate_query
+from ktt112026.voice.music.resolver import validate_query
 
 
 def test_resolver_accepts_search_and_http_urls():

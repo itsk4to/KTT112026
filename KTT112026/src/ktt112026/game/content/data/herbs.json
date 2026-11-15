@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "items": [
+    {"id": "linhthao", "name": "Linh Thảo", "tier": 1, "desc": "Thảo dược phổ thông"},
+    {"id": "thanhtrucdiep", "name": "Thanh Trúc Diệp", "tier": 1, "desc": "Lá trúc nhuốm linh khí"},
+    {"id": "huyenlinhhoa", "name": "Huyền Linh Hoa", "tier": 2, "desc": "Hoa rừng Huyền Lâm"},
+    {"id": "loctamthao", "name": "Lộc Tâm Thảo", "tier": 2, "desc": "Dùng luyện đan hỗ trợ"},
+    {"id": "kimtinhthao", "name": "Kim Tinh Thảo", "tier": 3, "desc": "Nguyên liệu đan cao hơn"}
+  ]
+}

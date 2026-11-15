@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "items": [
+    {"id": "thanhtruckiem", "name": "Thanh Trúc Kiếm", "path": "tien", "major_min": 1, "stage_min": 0, "price": 500, "desc": "+80 ATK, +5 Thân Pháp | -3 Căn Cốt", "bonuses": {"atk": 80, "than_phap": 5}, "penalties": {"can_cot": -3}},
+    {"id": "hacthietdao", "name": "Hắc Thiết Đoản Đao", "path": "ma", "major_min": 1, "stage_min": 0, "price": 500, "desc": "+95 ATK, +3% Bạo | -5 Khí Vận", "bonuses": {"atk": 95, "crit_pct": 3}, "penalties": {"khi_van": -5}},
+    {"id": "linhvanphien", "name": "Linh Vân Phiến", "path": "tien", "major_min": 1, "stage_min": 2, "price": 1500, "desc": "+130 ATK, +8 Ngộ Tính | -5 Căn Cốt", "bonuses": {"atk": 130, "ngo_tinh": 8}, "penalties": {"can_cot": -5}},
+    {"id": "uminhtrao", "name": "Bạch Cốt U Minh Trảo", "path": "ma", "major_min": 1, "stage_min": 2, "price": 1500, "desc": "+155 ATK, +8 Thân Pháp | -6 Căn Cốt", "bonuses": {"atk": 155, "than_phap": 8}, "penalties": {"can_cot": -6}},
+    {"id": "tudienthuong", "name": "Tử Điện Thần Thương", "path": "tien", "major_min": 2, "stage_min": 0, "price": 5000, "desc": "+280 ATK, +10% Bạo | -8 Thân Pháp", "bonuses": {"atk": 280, "crit_pct": 10}, "penalties": {"than_phap": -8}},
+    {"id": "huyetsatdao", "name": "Huyết Sát Ma Đao", "path": "ma", "major_min": 2, "stage_min": 0, "price": 5000, "desc": "+330 ATK, +12% Bạo | -12 Khí Vận", "bonuses": {"atk": 330, "crit_pct": 12}, "penalties": {"khi_van": -12}},
+    {"id": "luulytruong", "name": "Bạch Ngọc Lưu Ly Trượng", "path": "tien", "major_min": 2, "stage_min": 2, "price": 12000, "desc": "+350 ATK, +12 Thần Thức | -10 Căn Cốt", "bonuses": {"atk": 350, "than_thuc": 12}, "penalties": {"can_cot": -10}},
+    {"id": "vanhonphien", "name": "Vạn Hồn Phiên", "path": "ma", "major_min": 2, "stage_min": 2, "price": 12000, "desc": "+410 ATK, +15 Thần Thức | -12 Căn Cốt", "bonuses": {"atk": 410, "than_thuc": 15}, "penalties": {"can_cot": -12}},
+    {"id": "thaiatkiem", "name": "Thái Ất Kim Quang Kiếm", "path": "tien", "major_min": 3, "stage_min": 0, "price": 35000, "desc": "+650 ATK, +12 Căn Cốt | -10 Thân Pháp", "bonuses": {"atk": 650, "can_cot": 12}, "penalties": {"than_phap": -10}},
+    {"id": "thonphekich", "name": "Thôn Phệ Huyết Kích", "path": "ma", "major_min": 3, "stage_min": 0, "price": 35000, "desc": "+780 ATK, +10% Hút Máu | -15 Khí Vận", "bonuses": {"atk": 780, "lifesteal_pct": 10}, "penalties": {"khi_van": -15}},
+    {"id": "cuutieukich", "name": "Cửu Tiêu Lôi Ngọc Kích", "path": "tien", "major_min": 3, "stage_min": 2, "price": 75000, "desc": "+950 ATK, +18% Bạo | -15 Khí Vận", "bonuses": {"atk": 950, "crit_pct": 18}, "penalties": {"khi_van": -15}},
+    {"id": "quykholiem", "name": "U Minh Quỷ Khốc Liêm", "path": "ma", "major_min": 3, "stage_min": 2, "price": 75000, "desc": "+1,150 ATK, +20 Thân Pháp | -15 Ngộ Tính", "bonuses": {"atk": 1150, "than_phap": 20}, "penalties": {"ngo_tinh": -15}},
+    {"id": "bangphacdao", "name": "Huyền Thiên Băng Phách Đao", "path": "tien", "major_min": 4, "stage_min": 0, "price": 180000, "desc": "+1,800 ATK, +18 Thần Thức | -12 Ngộ Tính", "bonuses": {"atk": 1800, "than_thuc": 18}, "penalties": {"ngo_tinh": -12}},
+    {"id": "tulakiem", "name": "Tu La Diệt Thế Kiếm", "path": "ma", "major_min": 4, "stage_min": 0, "price": 180000, "desc": "+2,150 ATK, +22% Bạo | -18 Căn Cốt", "bonuses": {"atk": 2150, "crit_pct": 22}, "penalties": {"can_cot": -18}},
+    {"id": "luutinhcung", "name": "Tiên Hà Lưu Tinh Cung", "path": "tien", "major_min": 4, "stage_min": 2, "price": 350000, "desc": "+2,400 ATK, +22 Thân Pháp | -18 Căn Cốt", "bonuses": {"atk": 2400, "than_phap": 22}, "penalties": {"can_cot": -18}},
+    {"id": "mathanphu", "name": "Huyết Hải Ma Thần Phủ", "path": "ma", "major_min": 4, "stage_min": 2, "price": 350000, "desc": "+2,900 ATK, +15% Hút Máu | -22 Khí Vận", "bonuses": {"atk": 2900, "lifesteal_pct": 15}, "penalties": {"khi_van": -22}},
+    {"id": "trutienkiem", "name": "Thái Cổ Tru Tiên Kiếm", "path": "tien", "major_min": 5, "stage_min": 0, "price": 900000, "desc": "+4,800 ATK, +25% Bạo | -20 Khí Vận", "bonuses": {"atk": 4800, "crit_pct": 25}, "penalties": {"khi_van": -20}},
+    {"id": "tramthandao", "name": "Thiên Ma Trảm Thần Đao", "path": "ma", "major_min": 5, "stage_min": 0, "price": 900000, "desc": "+5,600 ATK, +28 Thần Thức | -25 Căn Cốt", "bonuses": {"atk": 5600, "than_thuc": 28}, "penalties": {"can_cot": -25}},
+    {"id": "khaithienphu", "name": "Hỗn Độn Khai Thiên Phủ", "path": "tien", "major_min": 6, "stage_min": 0, "price": 2500000, "desc": "+9,500 ATK, +30 Căn Cốt | -25 Thân Pháp", "bonuses": {"atk": 9500, "can_cot": 30}, "penalties": {"than_phap": -25}},
+    {"id": "honmathuong", "name": "Thí Thần Hỗn Ma Thương", "path": "ma", "major_min": 6, "stage_min": 0, "price": 2500000, "desc": "+11,200 ATK, +30% Bạo | -30 Khí Vận", "bonuses": {"atk": 11200, "crit_pct": 30}, "penalties": {"khi_van": -30}}
+  ]
+}
