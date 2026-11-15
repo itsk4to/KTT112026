@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import time
 
-from ktt112026.game.services._tx import atomic
 from ktt112026.game.content.realms import stage_requirement
 from ktt112026.game.repo.players import PlayerRepository
 
@@ -16,7 +15,6 @@ class PartnerService:
     def __init__(self, repo: PlayerRepository) -> None:
         self.repo = repo
 
-    @atomic
     def bind(self, user_id: str, partner_id: str) -> dict:
         if str(user_id) == str(partner_id):
             raise ValueError("Không thể kết duyên với chính mình.")
@@ -36,7 +34,6 @@ class PartnerService:
         self.repo.save(b)
         return {"partner_name": b.display_name, "partner_id": b.user_id}
 
-    @atomic
     def unbind(self, user_id: str) -> dict:
         a = self.repo.get(str(user_id))
         if a is None:
@@ -52,7 +49,6 @@ class PartnerService:
             self.repo.save(b)
         return {"was_partner": pid}
 
-    @atomic
     def songtu(self, user_id: str) -> dict:
         a = self.repo.get(str(user_id))
         if a is None:

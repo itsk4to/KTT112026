@@ -1,7 +1,7 @@
-"""Schema v8 — offline stamina, dokiep buffs, auction house."""
+"""Schema v7 — partner / songtu."""
 from __future__ import annotations
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 7
 
 DDL = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -43,9 +43,6 @@ CREATE TABLE IF NOT EXISTS players (
     last_bicanh_at REAL NOT NULL DEFAULT 0,
     partner_id TEXT NOT NULL DEFAULT '',
     last_songtu_at REAL NOT NULL DEFAULT 0,
-    last_stamina_at REAL NOT NULL DEFAULT 0,
-    stamina_buy_day TEXT NOT NULL DEFAULT '',
-    stamina_buy_count INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
@@ -79,26 +76,6 @@ CREATE TABLE IF NOT EXISTS owned_pets (
     quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity >= 0),
     PRIMARY KEY(user_id, pet_id)
 );
-
-CREATE TABLE IF NOT EXISTS player_buffs (
-    user_id TEXT NOT NULL,
-    kind TEXT NOT NULL,
-    value TEXT NOT NULL DEFAULT '{}',
-    PRIMARY KEY(user_id, kind)
-);
-
-CREATE TABLE IF NOT EXISTS auctions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    seller_id TEXT NOT NULL,
-    item_id TEXT NOT NULL,
-    quantity INTEGER NOT NULL CHECK(quantity > 0),
-    price INTEGER NOT NULL CHECK(price > 0),
-    status TEXT NOT NULL DEFAULT 'open',
-    buyer_id TEXT NOT NULL DEFAULT '',
-    created_at REAL NOT NULL,
-    expires_at REAL NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_auctions_open ON auctions(status, expires_at);
 """
 
 
@@ -121,9 +98,6 @@ def ensure_schema(db) -> None:
         ("last_bicanh_at", "REAL NOT NULL DEFAULT 0"),
         ("partner_id", "TEXT NOT NULL DEFAULT ''"),
         ("last_songtu_at", "REAL NOT NULL DEFAULT 0"),
-        ("last_stamina_at", "REAL NOT NULL DEFAULT 0"),
-        ("stamina_buy_day", "TEXT NOT NULL DEFAULT ''"),
-        ("stamina_buy_count", "INTEGER NOT NULL DEFAULT 0"),
     ]:
         if col not in cols:
             try:

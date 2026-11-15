@@ -12,7 +12,6 @@ from ktt112026.db.schema import ensure_schema
 from ktt112026.game.discord.commands import setup_game
 from ktt112026.game.repo.players import PlayerRepository
 from ktt112026.game.services.alchemy_service import AlchemyService
-from ktt112026.game.services.auction_service import AuctionService
 from ktt112026.game.services.economy_service import EconomyService
 from ktt112026.game.services.leaderboard_service import LeaderboardService
 from ktt112026.game.services.partner_service import PartnerService
@@ -68,7 +67,6 @@ class KTTBot(commands.Bot):
         self.economy = EconomyService(repo)
         self.partners = PartnerService(repo)
         self.leaderboard = LeaderboardService(repo)
-        self.auction = AuctionService(repo)
         self._commands_synced = False
 
     async def setup_hook(self) -> None:
@@ -90,7 +88,6 @@ class KTTBot(commands.Bot):
             self.economy,
             self.partners,
             self.leaderboard,
-            self.auction,
         )
         if self.settings.sync_commands_on_start and not self._commands_synced:
             try:

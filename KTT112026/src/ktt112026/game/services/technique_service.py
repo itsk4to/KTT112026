@@ -1,7 +1,6 @@
 """Learn / upgrade techniques (.hoc) — max tier 5."""
 from __future__ import annotations
 
-from ktt112026.game.services._tx import atomic
 from ktt112026.game.content.loader import load_congphap
 from ktt112026.game.repo.players import PlayerRepository
 
@@ -13,7 +12,6 @@ class TechniqueService:
         self.repo = repo
         self._by_id = {t["id"]: t for t in load_congphap()}
 
-    @atomic
     def learn(self, user_id: str, technique_id: str) -> dict:
         technique_id = technique_id.strip().lower()
         tech = self._by_id.get(technique_id)

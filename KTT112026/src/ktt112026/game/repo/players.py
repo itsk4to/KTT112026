@@ -2,13 +2,11 @@
 from __future__ import annotations
 
 import time
-import json
 from datetime import date
 from typing import Any
 
 from ktt112026.db.connection import Database
 from ktt112026.game.models.player import Player, PlayerStats
-from ktt112026.game.rules.stamina import regen
 
 
 def _row_to_player(row: Any) -> Player:
@@ -54,9 +52,6 @@ def _row_to_player(row: Any) -> Player:
         last_bicanh_at=float(g("last_bicanh_at") or 0),
         partner_id=str(g("partner_id") or ""),
         last_songtu_at=float(g("last_songtu_at") or 0),
-        last_stamina_at=float(g("last_stamina_at") or 0),
-        stamina_buy_day=str(g("stamina_buy_day") or ""),
-        stamina_buy_count=int(g("stamina_buy_count") or 0),
         created_at=int(row["created_at"]),
         updated_at=int(row["updated_at"]),
     )
@@ -66,85 +61,74 @@ class PlayerRepository:
     def __init__(self, db: Database) -> None:
         self.db = db
 
-    def atomic(self):
-        """`with repo.atomic():` — mọi ghi DB trong khối cùng commit / cùng rollback."""
-        return self.db.transaction()
-
     def get(self, user_id: str) -> Player | None:
         row = self.db.fetchone("SELECT * FROM players WHERE user_id=?", (str(user_id),))
-        if not row:
-            return None
-        player = _row_to_player(row)
-        # Hồi Thể Lực theo thời gian thực (kể cả lúc offline). Được lưu khi service gọi save().
-        player.stamina, player.last_stamina_at = regen(
-            player.stamina, player.max_stamina, player.last_stamina_at, time.time()
-        )
-        return player
-
-    _COLUMNS = (
-        "user_id", "display_name", "major_realm", "minor_stage", "path", "faction",
-        "cultivation", "spirit_stones", "stamina", "max_stamina",
-        "can_cot", "ngo_tinh", "than_thuc", "than_phap", "khi_van",
-        "root_system", "root_quality", "weapon1", "weapon2", "treasure",
-        "pet1", "pet2", "pet3",
-        "last_cultivate_at", "last_tower_day", "tower_runs_today",
-        "cultivate_bonus_pct", "cultivate_bonus_charges",
-        "last_gather_day", "gather_count_today", "last_bicanh_at",
-        "partner_id", "last_songtu_at",
-        "last_stamina_at", "stamina_buy_day", "stamina_buy_count",
-        "created_at", "updated_at",
-    )
-
-    @staticmethod
-    def _values(player: Player) -> dict[str, Any]:
-        s = player.stats.clamped()
-        return {
-            "user_id": player.user_id, "display_name": player.display_name,
-            "major_realm": player.major_realm, "minor_stage": player.minor_stage,
-            "path": player.path, "faction": player.faction,
-            "cultivation": player.cultivation, "spirit_stones": player.spirit_stones,
-            "stamina": player.stamina, "max_stamina": player.max_stamina,
-            "can_cot": s.can_cot, "ngo_tinh": s.ngo_tinh, "than_thuc": s.than_thuc,
-            "than_phap": s.than_phap, "khi_van": s.khi_van,
-            "root_system": player.root_system, "root_quality": player.root_quality,
-            "weapon1": player.weapon1, "weapon2": player.weapon2, "treasure": player.treasure,
-            "pet1": player.pet1, "pet2": player.pet2, "pet3": player.pet3,
-            "last_cultivate_at": player.last_cultivate_at,
-            "last_tower_day": player.last_tower_day, "tower_runs_today": player.tower_runs_today,
-            "cultivate_bonus_pct": player.cultivate_bonus_pct,
-            "cultivate_bonus_charges": player.cultivate_bonus_charges,
-            "last_gather_day": player.last_gather_day,
-            "gather_count_today": player.gather_count_today,
-            "last_bicanh_at": player.last_bicanh_at,
-            "partner_id": player.partner_id, "last_songtu_at": player.last_songtu_at,
-            "last_stamina_at": player.last_stamina_at,
-            "stamina_buy_day": player.stamina_buy_day,
-            "stamina_buy_count": player.stamina_buy_count,
-            "created_at": player.created_at, "updated_at": player.updated_at,
-        }
+        return _row_to_player(row) if row else None
 
     def insert(self, player: Player) -> None:
         player.ensure_invariants()
         now = int(time.time())
         player.created_at = player.created_at or now
         player.updated_at = now
-        player.last_stamina_at = player.last_stamina_at or float(now)
-        vals = self._values(player)
-        cols = self._COLUMNS
+        s = player.stats.clamped()
         self.db.execute(
-            f"INSERT INTO players({', '.join(cols)}) VALUES({', '.join('?' for _ in cols)})",
-            tuple(vals[c] for c in cols),
+            """INSERT INTO players(
+                user_id, display_name, major_realm, minor_stage, path, faction,
+                cultivation, spirit_stones, stamina, max_stamina,
+                can_cot, ngo_tinh, than_thuc, than_phap, khi_van,
+                root_system, root_quality, weapon1, weapon2, treasure,
+                pet1, pet2, pet3,
+                last_cultivate_at, last_tower_day, tower_runs_today,
+                cultivate_bonus_pct, cultivate_bonus_charges,
+                last_gather_day, gather_count_today, last_bicanh_at,
+                partner_id, last_songtu_at,
+                created_at, updated_at
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                player.user_id, player.display_name, player.major_realm, player.minor_stage,
+                player.path, player.faction, player.cultivation, player.spirit_stones,
+                player.stamina, player.max_stamina, s.can_cot, s.ngo_tinh, s.than_thuc,
+                s.than_phap, s.khi_van, player.root_system, player.root_quality,
+                player.weapon1, player.weapon2, player.treasure,
+                player.pet1, player.pet2, player.pet3,
+                player.last_cultivate_at, player.last_tower_day, player.tower_runs_today,
+                player.cultivate_bonus_pct, player.cultivate_bonus_charges,
+                player.last_gather_day, player.gather_count_today, player.last_bicanh_at,
+                player.partner_id, player.last_songtu_at,
+                player.created_at, player.updated_at,
+            ),
         )
         self.db.commit()
 
     def save(self, player: Player) -> None:
         player.ensure_invariants()
         player.updated_at = int(time.time())
-        vals = self._values(player)
-        cols = [c for c in self._COLUMNS if c not in ("user_id", "created_at")]
+        s = player.stats.clamped()
         self.db.execute(
-            f"UPDATE players SET {', '.join(c + '=?' for c in cols)} WHERE user_id=?",
-            tuple(vals[c] for c in cols) + (player.user_id,),
+            """UPDATE players SET
+                display_name=?, major_realm=?, minor_stage=?, path=?, faction=?,
+                cultivation=?, spirit_stones=?, stamina=?, max_stamina=?,
+                can_cot=?, ngo_tinh=?, than_thuc=?, than_phap=?, khi_van=?,
+                root_system=?, root_quality=?, weapon1=?, weapon2=?, treasure=?,
+                pet1=?, pet2=?, pet3=?,
+                last_cultivate_at=?, last_tower_day=?, tower_runs_today=?,
+                cultivate_bonus_pct=?, cultivate_bonus_charges=?,
+                last_gather_day=?, gather_count_today=?, last_bicanh_at=?,
+                partner_id=?, last_songtu_at=?, updated_at=?
+            WHERE user_id=?""",
+            (
+                player.display_name, player.major_realm, player.minor_stage, player.path,
+                player.faction, player.cultivation, player.spirit_stones, player.stamina,
+                player.max_stamina, s.can_cot, s.ngo_tinh, s.than_thuc, s.than_phap,
+                s.khi_van, player.root_system, player.root_quality,
+                player.weapon1, player.weapon2, player.treasure,
+                player.pet1, player.pet2, player.pet3,
+                player.last_cultivate_at, player.last_tower_day, player.tower_runs_today,
+                player.cultivate_bonus_pct, player.cultivate_bonus_charges,
+                player.last_gather_day, player.gather_count_today, player.last_bicanh_at,
+                player.partner_id, player.last_songtu_at,
+                player.updated_at, player.user_id,
+            ),
         )
         self.db.commit()
 
@@ -256,77 +240,6 @@ class PlayerRepository:
             (str(user_id), str(pet_id), int(qty)),
         )
         self.db.commit()
-
-    # --- buffs (đan hỗ trợ Độ Kiếp chờ được dùng ở lần .dokiep kế tiếp) ---
-    def buff_set(self, user_id: str, kind: str, value: dict[str, Any]) -> None:
-        self.db.execute(
-            """INSERT INTO player_buffs(user_id, kind, value) VALUES(?,?,?)
-               ON CONFLICT(user_id, kind) DO UPDATE SET value=excluded.value""",
-            (str(user_id), str(kind), json.dumps(value, ensure_ascii=False)),
-        )
-        self.db.commit()
-
-    def buff_list(self, user_id: str, prefix: str = "") -> dict[str, dict[str, Any]]:
-        rows = self.db.fetchall(
-            "SELECT kind, value FROM player_buffs WHERE user_id=? AND kind LIKE ?",
-            (str(user_id), prefix + "%"),
-        )
-        return {r["kind"]: json.loads(r["value"] or "{}") for r in rows}
-
-    def buff_clear(self, user_id: str, prefix: str = "") -> None:
-        self.db.execute(
-            "DELETE FROM player_buffs WHERE user_id=? AND kind LIKE ?",
-            (str(user_id), prefix + "%"),
-        )
-        self.db.commit()
-
-    # --- auctions (Sàn Đấu Giá) ---
-    def auction_create(self, seller_id: str, item_id: str, quantity: int, price: int,
-                       created_at: float, expires_at: float) -> int:
-        cur = self.db.execute(
-            "INSERT INTO auctions(seller_id, item_id, quantity, price, created_at, expires_at) "
-            "VALUES(?,?,?,?,?,?)",
-            (str(seller_id), str(item_id), int(quantity), int(price), created_at, expires_at),
-        )
-        self.db.commit()
-        return int(cur.lastrowid)
-
-    def auction_get(self, auction_id: int) -> dict[str, Any] | None:
-        row = self.db.fetchone("SELECT * FROM auctions WHERE id=?", (int(auction_id),))
-        return dict(row) if row else None
-
-    def auction_list_open(self, limit: int = 10, seller_id: str | None = None) -> list[dict[str, Any]]:
-        if seller_id is not None:
-            rows = self.db.fetchall(
-                "SELECT * FROM auctions WHERE status='open' AND seller_id=? ORDER BY id DESC LIMIT ?",
-                (str(seller_id), int(limit)),
-            )
-        else:
-            rows = self.db.fetchall(
-                "SELECT * FROM auctions WHERE status='open' ORDER BY id DESC LIMIT ?", (int(limit),)
-            )
-        return [dict(r) for r in rows]
-
-    def auction_open_count(self, seller_id: str) -> int:
-        row = self.db.fetchone(
-            "SELECT COUNT(*) AS n FROM auctions WHERE status='open' AND seller_id=?", (str(seller_id),)
-        )
-        return int(row["n"]) if row else 0
-
-    def auction_set_status(self, auction_id: int, status: str, buyer_id: str = "") -> bool:
-        """Chỉ đổi từ 'open' — chống bán/hủy hai lần cùng một lô."""
-        cur = self.db.execute(
-            "UPDATE auctions SET status=?, buyer_id=? WHERE id=? AND status='open'",
-            (status, str(buyer_id), int(auction_id)),
-        )
-        self.db.commit()
-        return cur.rowcount == 1
-
-    def auction_expired_open(self, now: float) -> list[dict[str, Any]]:
-        rows = self.db.fetchall(
-            "SELECT * FROM auctions WHERE status='open' AND expires_at<=?", (now,)
-        )
-        return [dict(r) for r in rows]
 
     def leaderboard(self, kind: str, limit: int = 10) -> list[dict]:
         limit = max(1, min(25, int(limit)))

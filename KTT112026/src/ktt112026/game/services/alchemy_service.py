@@ -4,7 +4,6 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from ktt112026.game.services._tx import atomic
 from ktt112026.game.content.loader import load_recipes
 from ktt112026.game.repo.players import PlayerRepository
 
@@ -21,7 +20,6 @@ class AlchemyService:
     def list_recipes(self) -> list[dict]:
         return load_recipes()
 
-    @atomic
     def craft(self, user_id: str, recipe_id: str) -> dict[str, Any]:
         recipe_id = recipe_id.strip().lower()
         recipe = self.recipes.get(recipe_id)
