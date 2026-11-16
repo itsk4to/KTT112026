@@ -1,21 +1,38 @@
-# Roadmap tóm tắt (từ Master Design 1.0)
+# Lộ trình ngắn — KTT112026
 
-## Vertical slice ưu tiên
-Tạo NV → xem chỉ số → tu luyện → nhiệm vụ → khám phá → combat → item → đột phá → mở nội dung.
+**Version code:** 0.10.0 · **GDD:** V2 · **Chi tiết:** `docs/PROJECT_STATUS_V2.md`
 
-## Phase
-0 Audit & foundation  
-1 Stat & cultivation  
-2 Breakthrough reliability  
-3 Vertical slice → Trúc Cơ  
-4 Combat & exploration  
-5 Economy & crafting  
-6 Build depth  
-7 Pet / Sect / collection  
-8 Endgame  
+## Đã xong (khung)
+Phase A–D cũ: dùng đồ, thú/bí cảnh/đan tối thiểu, chuyển-bán-BXH-song tu, UX `.me` + lọc shop.
 
-## Nguyên tắc
-- Mỗi hệ thống có lý do tồn tại
-- Preview = actual formula
-- Transaction atomic
-- Không Gacha làm điều kiện thắng
+## Làm tiếp (theo GDD V2)
+
+### Phase E — Tu & Đột phá (làm trước)
+- [x] `.tu [n]` / `.tu max`
+- [x] Hồi thể lực offline
+- [x] Khóa `.tu` khi 100%
+- [x] `.dp` tiểu cảnh + % thành công
+- [ ] Đồng bộ bảng tu vi GDD
+- [x] `.help` / `.huongdan`
+
+### Phase F — Độ kiếp build
+- [x] UI loại đáp án (Khí Vận / đan)
+- [x] Đan độ kiếp gắn session
+- [x] Đạo Lữ +1 Hộ Thể
+
+### Phase G — Kinh tế
+- [x] `.daugia`
+- [ ] Cân source/sink LS theo cảnh giới
+
+### Phase H — PvE & đan
+- [ ] Thêm zone / event bí cảnh
+- [ ] Mở rộng công thức luyện đan
+
+### Phase I — UI Thẻ 2
+- [ ] Gradient Tiên/Ma + khung theo đại cảnh giới
+
+### Phase J — Closed Beta
+- [ ] Anti-dupe, test tải, khóa số liệu
+
+## Không ưu tiên
+Node/Chart.js rewrite · PVP · full map một lần

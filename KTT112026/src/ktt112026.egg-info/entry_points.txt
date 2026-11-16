@@ -1,0 +1,2 @@
+[console_scripts]
+ktt112026 = ktt112026.bot:run

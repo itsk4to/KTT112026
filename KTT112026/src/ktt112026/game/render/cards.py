@@ -315,8 +315,22 @@ def render_shop_buy_result(*, ok: bool, title: str, detail: str) -> bytes:
     return buf.getvalue()
 
 
-def render_dokiep_card(*, round_no: int, shields: int, message: str, options: list[str] | None = None, finished: bool = False, success: bool = False) -> bytes:
-    W, H = 640, 340 if not finished else 220
+def render_dokiep_card(
+    *,
+    round_no: int,
+    shields: int,
+    message: str,
+    options: list[str] | None = None,
+    finished: bool = False,
+    success: bool = False,
+    hints: list[str] | None = None,
+) -> bytes:
+    opts = options or []
+    hint_lines = hints or []
+    base_h = 340 if not finished else 220
+    extra = 18 * min(4, len(hint_lines)) + max(0, len(opts) - 3) * 52
+    H = min(520, base_h + extra)
+    W = 640
     img = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(img)
     title_f = _font(24, bold=True)
@@ -327,18 +341,22 @@ def render_dokiep_card(*, round_no: int, shields: int, message: str, options: li
         title = "Độ Kiếp Thành Công" if success else "Độ Kiếp Thất Bại"
         color = (120, 200, 140) if success else (220, 120, 120)
         draw.text((28, 36), title, font=title_f, fill=color)
-        draw.text((28, 90), message[:80], font=body_f, fill=TEXT)
+        draw.text((28, 90), message[:90], font=body_f, fill=TEXT)
     else:
         draw.text((28, 28), f"Lôi Kiếp · Vòng {round_no}/5", font=title_f, fill=GOLD)
         draw.text((28, 64), f"Hộ Thể còn: {shields}", font=body_f, fill=TEXT)
-        draw.text((28, 96), message[:70], font=small_f, fill=MUTED)
-        y = 130
+        y = 92
+        for h in hint_lines[:4]:
+            draw.text((28, y), f"• {h[:70]}", font=small_f, fill=(180, 160, 100))
+            y += 18
+        draw.text((28, y), message[:70], font=small_f, fill=MUTED)
+        y += 28
         labels = ["①", "②", "③"]
-        for i, opt in enumerate(options or []):
+        for i, opt in enumerate(opts[:3]):
             draw.rounded_rectangle((24, y, W - 24, y + 44), radius=8, fill=(36, 40, 58))
-            draw.text((36, y + 12), f"{labels[i]}  {opt}", font=small_f, fill=TEXT)
+            draw.text((36, y + 12), f"{labels[i]}  {opt[:52]}", font=small_f, fill=TEXT)
             y += 52
-        draw.text((28, H - 36), "Bấm nút 1 / 2 / 3 bên dưới", font=small_f, fill=MUTED)
+        draw.text((28, H - 36), "Bấm nút bên dưới — đáp án sai có thể đã bị loại", font=small_f, fill=MUTED)
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()

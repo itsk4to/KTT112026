@@ -1,0 +1,59 @@
+Metadata-Version: 2.4
+Name: ktt112026
+Version: 0.11.0
+Summary: KTT112026 — Đạo Lộ Tu Tiên: voice + game MVP (image UI)
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: discord.py[voice]<3.0,>=2.7.1
+Requires-Dist: audioop-lts>=0.2.2; python_version >= "3.13"
+Requires-Dist: yt-dlp>=2024.8.0
+Requires-Dist: PyNaCl<1.6.0,>=1.5.0
+Requires-Dist: davey>=0.1.0
+Requires-Dist: edge-tts>=6.1.0
+Requires-Dist: imageio-ffmpeg>=0.5.1
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
+
+# KTT112026 — Đạo Lộ Tu Tiên
+
+**v0.5.0** — Cây thư mục gọn, dễ sửa.
+
+## Cây chính
+```
+src/ktt112026/
+  bot.py config.py
+  db/          # SQLite
+  voice/       # nhạc + TTS
+  game/
+    models/ rules/ content/
+    services/ repo/
+    render/    # ảnh
+    discord/   # lệnh + nút
+```
+
+Chi tiết: `docs/STRUCTURE.md`
+
+## Lệnh game
+`.taothe` `.me` `.tu` `.chon` `.dokiep` `.gianhap` `.shop` `.mua` `.tui` `.mac` `.dung` `.hoc` `.congphap` `.lucchien` `.thap`
+
+## Chạy
+```bash
+pip install -r requirements.txt
+export DISCORD_TOKEN=...
+python -m ktt112026
+```
+
+## Tài liệu dự án
+- Trạng thái & lộ trình: `docs/PROJECT_STATUS_V2.md`
+- Roadmap ngắn: `docs/ROADMAP_SUMMARY.md`
+
+## Railway — không mất DB khi Update
+
+Gắn **Volume** mount path `/data`, set:
+
+```text
+KTT_DATABASE_PATH=/data/ktt112026.db
+```
+
+Chi tiết: `docs/RAILWAY_VOLUME.md`.

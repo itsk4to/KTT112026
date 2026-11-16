@@ -19,3 +19,22 @@ Supported voices: `vi-VN-HoaiMyNeural` and `vi-VN-NamMinhNeural`. The TTS servic
 ## Python 3.13+
 
 `audioop-lts` được cài có điều kiện trên Python 3.13+, nơi module `audioop` đã bị loại khỏi standard library.
+
+
+## Database / Railway Volume
+
+| Biến | Mặc định | Ý nghĩa |
+|------|----------|---------|
+| `KTT_DATABASE_PATH` | `/data/ktt112026.db` (khi có `/data`) hoặc `data/ktt112026.db` | File SQLite người chơi |
+
+Xem chi tiết: `docs/RAILWAY_VOLUME.md`.
+
+## Admin
+
+| Biến | Ý nghĩa |
+|------|---------|
+| `KTT_ADMIN_IDS` | Danh sách Discord user ID (phẩy) được dùng `/admin tutien` |
+
+Lệnh:
+- `/admin tutien version|give_stones|create_code|list_codes|delete_code|lookup|set_stones`
+- Người chơi: `.code <mã>`

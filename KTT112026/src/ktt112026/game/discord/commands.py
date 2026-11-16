@@ -13,6 +13,8 @@ from ktt112026.game.services.item_use_service import ItemUseService
 from ktt112026.game.services.player_service import PlayerService
 from ktt112026.game.services.shop_service import ShopService
 from ktt112026.game.services.alchemy_service import AlchemyService
+from ktt112026.game.services.auction_service import AuctionService
+from ktt112026.game.services.code_service import CodeService
 from ktt112026.game.services.economy_service import EconomyService
 from ktt112026.game.services.leaderboard_service import LeaderboardService
 from ktt112026.game.services.partner_service import PartnerService
@@ -59,6 +61,8 @@ class GameCommands(commands.Cog):
         economy: EconomyService,
         partners: PartnerService,
         leaderboard: LeaderboardService,
+        auction: AuctionService,
+        codes: CodeService,
     ) -> None:
         self.bot = bot
         self.players = players
@@ -76,6 +80,8 @@ class GameCommands(commands.Cog):
         self.economy = economy
         self.partners = partners
         self.leaderboard = leaderboard
+        self.auction = auction
+        self.codes = codes
 
     async def _img(self, ctx: commands.Context, png: bytes, name: str = "card.png", view=None) -> None:
         file = discord.File(BytesIO(png), filename=name)
@@ -89,6 +95,10 @@ class GameCommands(commands.Cog):
             await ctx.reply(str(exc), mention_author=False)
             return
         await self._img(ctx, render_create_card(player), "taothe.png")
+        await ctx.reply(
+            "Chào mừng đạo hữu. Gõ `.huongdan` để xem lộ trình · Bắt đầu bằng `.tu` hoặc `.tu 5`.",
+            mention_author=False,
+        )
 
     @commands.command(name="me", aliases=("info", "the"))
     async def me(self, ctx: commands.Context) -> None:
@@ -132,23 +142,90 @@ class GameCommands(commands.Cog):
         await self._img(ctx, png, "me.png")
 
     @commands.command(name="tu", aliases=("tuluyen",))
-    async def tu(self, ctx: commands.Context) -> None:
+    async def tu(self, ctx: commands.Context, times: str | None = None) -> None:
+        # .tu | .tu 5 | .tu max
+        arg: int | str = 1
+        if times is not None:
+            arg = times
         try:
-            result = self.players.cultivate(str(ctx.author.id))
+            result = self.players.cultivate(str(ctx.author.id), arg)
         except ValueError as exc:
             await ctx.reply(str(exc), mention_author=False)
             return
         p = result["player"]
+        # annotate batch on card via advanced flag text path
+        advanced = bool(result.get("locked"))
         await self._img(
             ctx,
             render_cultivate_card(
                 name=p.display_name, realm=result["realm"], gain=result["gain"],
                 cultivation=result["cultivation"], need=result["need"],
                 stamina=result["stamina"], max_stamina=result["max_stamina"],
-                advanced=result["advanced"],
+                advanced=advanced,
             ),
             "tu.png",
         )
+        if result.get("locked"):
+            tip = "Tu Vi 100% — `.dp` đột phá tiểu cảnh" if p.minor_stage < 2 else "Hậu Kỳ 100% — `.dokiep`"
+            await ctx.reply(f"🔒 {tip} | x{result['ticks']} lần · +{result['stones_gained']} LS", mention_author=False)
+        elif result.get("ticks", 1) > 1:
+            await ctx.reply(
+                f"Đã tu **{result['ticks']}** lần · +{result['gain']:,} TV · +{result['stones_gained']} LS",
+                mention_author=False,
+            )
+
+    @commands.command(name="dp", aliases=("dotpha",))
+    async def dp(self, ctx: commands.Context) -> None:
+        try:
+            result = self.players.breakthrough_minor(str(ctx.author.id))
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Không đột phá được", detail=str(exc), ok=False))
+            return
+        ok = result["success"]
+        detail = result["message"]
+        if ok:
+            detail += f" (tỷ lệ ~{result['rate']*100:.0f}%)"
+        else:
+            detail += f" · Còn {result['cultivation']:,}/{result['need']:,}"
+        await self._img(
+            ctx,
+            render_simple_result(
+                title="Đột phá tiểu cảnh" if ok else "Đột phá thất bại",
+                detail=detail[:150],
+                ok=ok,
+            ),
+        )
+
+
+    @commands.command(name="code", aliases=("nhapcode", "giftcode"))
+    async def redeem_code(self, ctx: commands.Context, code: str | None = None) -> None:
+        if not code:
+            await ctx.reply("`.code <ma>` — nhập giftcode", mention_author=False)
+            return
+        try:
+            r = self.codes.redeem(str(ctx.author.id), code)
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Mã không dùng được", detail=str(exc), ok=False))
+            return
+        parts = []
+        if r["stones"]:
+            parts.append(f"+{r['stones']:,} LS")
+        if r["item_id"] and r["item_qty"]:
+            parts.append(f"+{r['item_qty']} {r['item_id']}")
+        detail = " · ".join(parts) + f" · Còn {r['stones_left']:,} LS"
+        await self._img(ctx, render_simple_result(title=f"Đã nhập {r['code']}", detail=detail[:140]))
+
+    @commands.command(name="help", aliases=("huongdan", "trogiup"))
+    async def help_game(self, ctx: commands.Context) -> None:
+        text = (
+            "**Tân thủ:** `.taothe` → `.tu` / `.tu 5` / `.tu max` → đầy thanh thì `.dp` "
+            "(Hậu Kỳ thì `.dokiep`) → `.me` `.shop` `.thap` `.bicanh`\n"
+            "**Đạo lộ:** `.chon tien|ma` · `.gianhap tongmon|tantu`\n"
+            "**Đồ:** `.mua` `.dung` `.hoc` `.tui` `.mac` · **Thú:** `.trieuhoi` `.mang`\n"
+            "**Xã hội:** `.chuyen` `.ban` `.bxh` `.ketduyen` `.songtu` · **Code:** `.code <ma>`\n"
+            "Thể lực hồi offline (~2 phút/điểm). Chi tiết: xem `.me`"
+        )
+        await ctx.reply(text.replace("\\n", "\n"), mention_author=False)
 
     @commands.command(name="chon")
     async def chon(self, ctx: commands.Context, path: str | None = None) -> None:
@@ -187,6 +264,7 @@ class GameCommands(commands.Cog):
         png = render_dokiep_card(
             round_no=prompt["round"], shields=prompt["shields"],
             message="Chọn một phương án hộ pháp.", options=prompt["options"],
+            hints=prompt.get("hints") or [],
         )
         view = DokiepView(self.dokiep, ctx.author.id)
         await self._img(ctx, png, "dokiep.png", view=view)
@@ -453,6 +531,66 @@ class GameCommands(commands.Cog):
         )
         await self._img(ctx, render_simple_result(title="Song Tu", detail=detail[:150]))
 
+
+    @commands.command(name="daugia")
+    async def daugia(self, ctx: commands.Context, action: str | None = None, *args: str) -> None:
+        """
+        .daugia — xem sàn
+        .daugia dang <ma_do> <gia> [sl]
+        .daugia mua <id>
+        """
+        act = (action or "list").lower()
+        if act in ("list", "xem", "ds"):
+            rows = self.auction.list_open(12)
+            if not rows:
+                await self._img(ctx, render_simple_result(title="Sàn Đấu Giá", detail="Trống — .daugia dang <ma> <gia>"))
+                return
+            detail = " · ".join(f"#{r['id']} {r['name']}x{r['quantity']}={r['price']:,}" for r in rows[:8])
+            await self._img(ctx, render_simple_result(title="Sàn Đấu Giá", detail=detail[:150]))
+            return
+        if act in ("dang", "ban", "sell"):
+            if len(args) < 2:
+                await ctx.reply("`.daugia dang <ma_do> <gia> [sl]`", mention_author=False)
+                return
+            item_id = args[0]
+            try:
+                price = int(args[1])
+                qty = int(args[2]) if len(args) > 2 else 1
+            except ValueError:
+                await ctx.reply("Giá/số lượng phải là số.", mention_author=False)
+                return
+            try:
+                r = self.auction.create(str(ctx.author.id), item_id, price, qty)
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Đăng thất bại", detail=str(exc), ok=False))
+                return
+            await self._img(
+                ctx,
+                render_simple_result(
+                    title="Đã đăng Sàn",
+                    detail=f"#{r['id']} {r['name']} x{r['qty']} · {r['price']:,} LS · 48h",
+                ),
+            )
+            return
+        if act in ("mua", "buy"):
+            if not args:
+                await ctx.reply("`.daugia mua <id>`", mention_author=False)
+                return
+            try:
+                r = self.auction.buy(str(ctx.author.id), int(args[0]))
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Mua thất bại", detail=str(exc), ok=False))
+                return
+            await self._img(
+                ctx,
+                render_simple_result(
+                    title="Mua thành công",
+                    detail=f"{r['name']} x{r['qty']} · -{r['price']:,} LS (phí người bán {r['fee']:,})",
+                ),
+            )
+            return
+        await ctx.reply("`.daugia` | `.daugia dang <ma> <gia>` | `.daugia mua <id>`", mention_author=False)
+
     @commands.command(name="shop")
     async def shop(self, ctx: commands.Context, category: str | None = None, page: int = 1) -> None:
         cat = resolve_category(category) if category else None
@@ -501,10 +639,12 @@ async def setup_game(
     economy: EconomyService,
     partners: PartnerService,
     leaderboard: LeaderboardService,
+    auction: AuctionService,
+    codes: CodeService,
 ) -> None:
     await bot.add_cog(
         GameCommands(
             bot, players, shop, dokiep, tower, inventory, items, techniques, stats,
-            pets, exploration, gather, alchemy, economy, partners, leaderboard,
+            pets, exploration, gather, alchemy, economy, partners, leaderboard, auction, codes,
         )
     )

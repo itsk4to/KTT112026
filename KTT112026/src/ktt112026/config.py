@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Mapping
 
 
@@ -28,6 +29,30 @@ def _bool(env: Mapping[str, str], key: str, default: bool) -> bool:
     return default
 
 
+
+def _parse_id_list(raw: str) -> tuple[int, ...]:
+    """Comma-separated Discord user IDs for /admin tutien."""
+    out: list[int] = []
+    for part in (raw or "").replace(" ", "").split(","):
+        if not part:
+            continue
+        try:
+            out.append(int(part))
+        except ValueError:
+            continue
+    return tuple(out)
+
+
+def _resolve_database_path(env: Mapping[str, str]) -> str:
+    """Prefer explicit env; on Railway Volume use /data so redeploys never wipe players."""
+    explicit = (env.get("KTT_DATABASE_PATH") or "").strip()
+    if explicit:
+        return explicit
+    if Path("/data").is_dir():
+        return "/data/ktt112026.db"
+    return "data/ktt112026.db"
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     discord_token: str
@@ -40,6 +65,7 @@ class Settings:
     log_level: str = "INFO"
     sync_commands_on_start: bool = True
     database_path: str = "data/ktt112026.db"
+    admin_ids: tuple[int, ...] = ()
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "Settings":
@@ -58,5 +84,6 @@ class Settings:
             max_tts_chars=_positive_int(source, "KTT_MAX_TTS_CHARS", 500),
             log_level=log_level,
             sync_commands_on_start=_bool(source, "KTT_SYNC_COMMANDS_ON_START", True),
-            database_path=source.get("KTT_DATABASE_PATH", "data/ktt112026.db").strip() or "data/ktt112026.db",
+            database_path=_resolve_database_path(source),
+            admin_ids=_parse_id_list(source.get("KTT_ADMIN_IDS", "")),
         )

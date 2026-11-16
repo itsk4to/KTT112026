@@ -26,3 +26,17 @@ pip install -r requirements.txt
 export DISCORD_TOKEN=...
 python -m ktt112026
 ```
+
+## Tài liệu dự án
+- Trạng thái & lộ trình: `docs/PROJECT_STATUS_V2.md`
+- Roadmap ngắn: `docs/ROADMAP_SUMMARY.md`
+
+## Railway — không mất DB khi Update
+
+Gắn **Volume** mount path `/data`, set:
+
+```text
+KTT_DATABASE_PATH=/data/ktt112026.db
+```
+
+Chi tiết: `docs/RAILWAY_VOLUME.md`.

@@ -7,10 +7,19 @@
       "major_min": 1,
       "stage_min": 0,
       "stamina_cost": 8,
-      "reward_stones": [30, 80],
-      "reward_cultivation": [40, 120],
+      "reward_stones": [
+        30,
+        80
+      ],
+      "reward_cultivation": [
+        40,
+        120
+      ],
       "herb_chance": 0.35,
-      "herbs": ["linhthao", "thanhtrucdiep"],
+      "herbs": [
+        "linhthao",
+        "thanhtrucdiep"
+      ],
       "desc": "Cốc nhỏ còn sót linh khí — phù hợp Luyện Khí / Dẫn Khí"
     },
     {
@@ -19,11 +28,43 @@
       "major_min": 2,
       "stage_min": 0,
       "stamina_cost": 12,
-      "reward_stones": [80, 180],
-      "reward_cultivation": [120, 350],
+      "reward_stones": [
+        80,
+        180
+      ],
+      "reward_cultivation": [
+        120,
+        350
+      ],
       "herb_chance": 0.4,
-      "herbs": ["huyenlinhhoa", "thanhtrucdiep", "loctamthao"],
+      "herbs": [
+        "huyenlinhhoa",
+        "thanhtrucdiep",
+        "loctamthao"
+      ],
       "desc": "Rừng cổ — yêu cầu Trúc Cơ / Ngưng Huyết trở lên"
+    },
+    {
+      "id": "loi_dai",
+      "name": "Lôi Đài Cổ",
+      "major_min": 3,
+      "stage_min": 0,
+      "stamina_cost": 18,
+      "reward_stones": [
+        200,
+        450
+      ],
+      "reward_cultivation": [
+        400,
+        900
+      ],
+      "herb_chance": 0.3,
+      "herbs": [
+        "huyenlinhhoa",
+        "loctamthao",
+        "kimtinhthao"
+      ],
+      "desc": "Đài lôi — Cấp 3+ (Kim Đan / Ma Đan)"
     }
   ]
 }

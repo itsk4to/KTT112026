@@ -1,7 +1,7 @@
 """Schema v7 — partner / songtu."""
 from __future__ import annotations
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 10
 
 DDL = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -43,6 +43,11 @@ CREATE TABLE IF NOT EXISTS players (
     last_bicanh_at REAL NOT NULL DEFAULT 0,
     partner_id TEXT NOT NULL DEFAULT '',
     last_songtu_at REAL NOT NULL DEFAULT 0,
+    last_stamina_tick REAL NOT NULL DEFAULT 0,
+    dokiep_first_immune INTEGER NOT NULL DEFAULT 0,
+    dokiep_fail_loss_pct INTEGER NOT NULL DEFAULT 20,
+    dokiep_remove_wrong INTEGER NOT NULL DEFAULT 0,
+    dokiep_extra_shield INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
@@ -68,6 +73,36 @@ CREATE TABLE IF NOT EXISTS item_use_limits (
     day_count INTEGER NOT NULL DEFAULT 0,
     life_count INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY(user_id, item_id)
+);
+
+CREATE TABLE IF NOT EXISTS redeem_codes (
+    code TEXT PRIMARY KEY,
+    reward_stones INTEGER NOT NULL DEFAULT 0,
+    reward_item_id TEXT NOT NULL DEFAULT '',
+    reward_item_qty INTEGER NOT NULL DEFAULT 0,
+    max_uses INTEGER NOT NULL DEFAULT 1,
+    used_count INTEGER NOT NULL DEFAULT 0,
+    expires_at INTEGER NOT NULL DEFAULT 0,
+    note TEXT NOT NULL DEFAULT '',
+    created_by TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS code_redemptions (
+    code TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    redeemed_at INTEGER NOT NULL,
+    PRIMARY KEY(code, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS auction_listings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_id TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    price INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS owned_pets (
@@ -98,6 +133,11 @@ def ensure_schema(db) -> None:
         ("last_bicanh_at", "REAL NOT NULL DEFAULT 0"),
         ("partner_id", "TEXT NOT NULL DEFAULT ''"),
         ("last_songtu_at", "REAL NOT NULL DEFAULT 0"),
+        ("last_stamina_tick", "REAL NOT NULL DEFAULT 0"),
+        ("dokiep_first_immune", "INTEGER NOT NULL DEFAULT 0"),
+        ("dokiep_fail_loss_pct", "INTEGER NOT NULL DEFAULT 20"),
+        ("dokiep_remove_wrong", "INTEGER NOT NULL DEFAULT 0"),
+        ("dokiep_extra_shield", "INTEGER NOT NULL DEFAULT 0"),
     ]:
         if col not in cols:
             try:
@@ -110,3 +150,5 @@ def ensure_schema(db) -> None:
     else:
         db.execute("UPDATE schema_meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))
     db.commit()
+
+# auction table created in ensure_schema patch below

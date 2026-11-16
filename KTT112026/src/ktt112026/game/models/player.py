@@ -80,6 +80,11 @@ class Player:
     last_gather_day: str = ""
     gather_count_today: int = 0
     last_bicanh_at: float = 0.0
+    last_stamina_tick: float = 0.0
+    dokiep_extra_shield: int = 0
+    dokiep_remove_wrong: int = 0
+    dokiep_fail_loss_pct: int = 20
+    dokiep_first_immune: int = 0
     partner_id: str = ""
     last_songtu_at: float = 0.0
     created_at: int = 0

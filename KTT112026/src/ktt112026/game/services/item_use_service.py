@@ -78,9 +78,29 @@ class ItemUseService:
                 messages.append("Tịnh hóa thất bại (mất đan)")
         elif etype == "heal_full_out_of_combat":
             messages.append("Hồi phục căn cơ (HP/MP ngoài trận — placeholder)")
+        elif etype == "dokiep_shield_bonus":
+            p.dokiep_extra_shield = min(5, p.dokiep_extra_shield + int(effect.get("amount", 1)))
+            messages.append(f"+{effect.get('amount', 1)} Hộ Thể cho lần .dokiep tới")
+        elif etype == "dokiep_remove_wrong":
+            p.dokiep_remove_wrong = max(p.dokiep_remove_wrong, 1)
+            messages.append("Loại đáp án sai khi .dokiep")
+        elif etype == "dokiep_remove_wrong_all_rounds":
+            p.dokiep_remove_wrong = max(p.dokiep_remove_wrong, int(effect.get("amount", 1)))
+            messages.append("Loại đáp án sai mọi vòng .dokiep")
+        elif etype == "dokiep_fail_loss_pct":
+            p.dokiep_fail_loss_pct = int(effect.get("amount", 5))
+            messages.append(f"Thất bại chỉ mất {p.dokiep_fail_loss_pct}% Tu Vi")
+        elif etype == "dokiep_first_miss_immune_and_shield":
+            p.dokiep_first_immune = 1
+            p.dokiep_extra_shield = min(5, p.dokiep_extra_shield + int(effect.get("shield", 1)))
+            messages.append("Miễn lần sai đầu + khiên khi .dokiep")
+        elif etype == "dokiep_damage_reduce_pct":
+            p.dokiep_extra_shield = min(5, p.dokiep_extra_shield + 1)
+            messages.append(f"Hộ Tâm: +1 Hộ Thể (giảm {effect.get('amount', 20)}% áp lực lôi)")
+        elif etype and str(etype).startswith("dokiep"):
+            messages.append("Đan Độ Kiếp đã ghi nhận cho lần .dokiep tới")
         else:
-            # dokiep / combat buffs: acknowledge consume, full combat later
-            messages.append(f"Đã dùng — hiệu ứng `{etype}` được ghi nhận (một phần combat/độ kiếp sẽ kích hoạt khi hệ đó mở đầy đủ)")
+            messages.append(f"Đã dùng — hiệu ứng `{etype}` được ghi nhận")
 
         # permanent side effects on stats
         for se in pill.get("side_effects") or []:

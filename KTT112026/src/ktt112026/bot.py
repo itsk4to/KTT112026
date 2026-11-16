@@ -9,9 +9,12 @@ from discord.ext import commands
 from ktt112026.config import Settings
 from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
+from ktt112026.game.discord.admin_commands import setup_admin
 from ktt112026.game.discord.commands import setup_game
+from ktt112026.game.services.code_service import CodeService
 from ktt112026.game.repo.players import PlayerRepository
 from ktt112026.game.services.alchemy_service import AlchemyService
+from ktt112026.game.services.auction_service import AuctionService
 from ktt112026.game.services.economy_service import EconomyService
 from ktt112026.game.services.leaderboard_service import LeaderboardService
 from ktt112026.game.services.partner_service import PartnerService
@@ -50,6 +53,7 @@ class KTTBot(commands.Bot):
         db_path.parent.mkdir(parents=True, exist_ok=True)
         self.db = Database(db_path)
         ensure_schema(self.db)
+        logger.info("Player database: %s", db_path.resolve())
         repo = PlayerRepository(self.db)
         self.player_repo = repo
         self.players = PlayerService(repo)
@@ -64,13 +68,16 @@ class KTTBot(commands.Bot):
         self.exploration = ExplorationService(repo)
         self.gather = GatherService(repo)
         self.alchemy = AlchemyService(repo)
+        self.auction = AuctionService(repo)
         self.economy = EconomyService(repo)
         self.partners = PartnerService(repo)
         self.leaderboard = LeaderboardService(repo)
+        self.codes = CodeService(repo)
         self._commands_synced = False
 
     async def setup_hook(self) -> None:
         await self.add_cog(VoiceCommands(self.music, self.settings))
+        await setup_admin(self, self.codes, self.players, self.settings.admin_ids)
         await setup_game(
             self,
             self.players,
@@ -88,6 +95,8 @@ class KTTBot(commands.Bot):
             self.economy,
             self.partners,
             self.leaderboard,
+            self.auction,
+            self.codes,
         )
         if self.settings.sync_commands_on_start and not self._commands_synced:
             try:

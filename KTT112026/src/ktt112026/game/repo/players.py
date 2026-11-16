@@ -52,6 +52,11 @@ def _row_to_player(row: Any) -> Player:
         last_bicanh_at=float(g("last_bicanh_at") or 0),
         partner_id=str(g("partner_id") or ""),
         last_songtu_at=float(g("last_songtu_at") or 0),
+        last_stamina_tick=float(g("last_stamina_tick") or 0),
+        dokiep_extra_shield=int(g("dokiep_extra_shield") or 0),
+        dokiep_remove_wrong=int(g("dokiep_remove_wrong") or 0),
+        dokiep_fail_loss_pct=int(g("dokiep_fail_loss_pct") or 20),
+        dokiep_first_immune=int(g("dokiep_first_immune") or 0),
         created_at=int(row["created_at"]),
         updated_at=int(row["updated_at"]),
     )
@@ -81,9 +86,9 @@ class PlayerRepository:
                 last_cultivate_at, last_tower_day, tower_runs_today,
                 cultivate_bonus_pct, cultivate_bonus_charges,
                 last_gather_day, gather_count_today, last_bicanh_at,
-                partner_id, last_songtu_at,
+                partner_id, last_songtu_at, last_stamina_tick,
                 created_at, updated_at
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 player.user_id, player.display_name, player.major_realm, player.minor_stage,
                 player.path, player.faction, player.cultivation, player.spirit_stones,
@@ -94,7 +99,7 @@ class PlayerRepository:
                 player.last_cultivate_at, player.last_tower_day, player.tower_runs_today,
                 player.cultivate_bonus_pct, player.cultivate_bonus_charges,
                 player.last_gather_day, player.gather_count_today, player.last_bicanh_at,
-                player.partner_id, player.last_songtu_at,
+                player.partner_id, player.last_songtu_at, player.last_stamina_tick,
                 player.created_at, player.updated_at,
             ),
         )
@@ -114,7 +119,9 @@ class PlayerRepository:
                 last_cultivate_at=?, last_tower_day=?, tower_runs_today=?,
                 cultivate_bonus_pct=?, cultivate_bonus_charges=?,
                 last_gather_day=?, gather_count_today=?, last_bicanh_at=?,
-                partner_id=?, last_songtu_at=?, updated_at=?
+                partner_id=?, last_songtu_at=?, last_stamina_tick=?,
+                dokiep_extra_shield=?, dokiep_remove_wrong=?, dokiep_fail_loss_pct=?, dokiep_first_immune=?,
+                updated_at=?
             WHERE user_id=?""",
             (
                 player.display_name, player.major_realm, player.minor_stage, player.path,
@@ -126,7 +133,9 @@ class PlayerRepository:
                 player.last_cultivate_at, player.last_tower_day, player.tower_runs_today,
                 player.cultivate_bonus_pct, player.cultivate_bonus_charges,
                 player.last_gather_day, player.gather_count_today, player.last_bicanh_at,
-                player.partner_id, player.last_songtu_at,
+                player.partner_id, player.last_songtu_at, player.last_stamina_tick,
+                player.dokiep_extra_shield, player.dokiep_remove_wrong,
+                player.dokiep_fail_loss_pct, player.dokiep_first_immune,
                 player.updated_at, player.user_id,
             ),
         )

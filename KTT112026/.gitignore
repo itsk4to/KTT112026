@@ -4,9 +4,7 @@ __pycache__/
 .venv/
 venv/
 .env
-*.log
-*.mp3
 *.db
-build/
-dist/
-*.egg-info/
+data/
+!data/.gitkeep
+.DS_Store
