@@ -48,6 +48,7 @@ src/ktt112026/game/services/__init__.py
 src/ktt112026/game/services/alchemy_service.py
 src/ktt112026/game/services/auction_service.py
 src/ktt112026/game/services/code_service.py
+src/ktt112026/game/services/daily_service.py
 src/ktt112026/game/services/dokiep_service.py
 src/ktt112026/game/services/economy_service.py
 src/ktt112026/game/services/exploration_service.py
@@ -58,6 +59,7 @@ src/ktt112026/game/services/leaderboard_service.py
 src/ktt112026/game/services/partner_service.py
 src/ktt112026/game/services/pet_service.py
 src/ktt112026/game/services/player_service.py
+src/ktt112026/game/services/quest_service.py
 src/ktt112026/game/services/shop_service.py
 src/ktt112026/game/services/stats_service.py
 src/ktt112026/game/services/technique_service.py

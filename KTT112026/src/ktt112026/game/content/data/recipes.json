@@ -1,57 +1,42 @@
 {
-  "version": 1,
   "recipes": [
     {
-      "id": "tukhidan",
-      "name": "Tụ Khí Đan",
-      "output_id": "tukhidan",
+      "id": "linhdan",
+      "name": "Linh Đan",
+      "output_id": "linhdan",
       "output_qty": 1,
       "major_min": 1,
       "ingredients": {
-        "linhthao": 2,
-        "thanhtrucdiep": 1
+        "linhthao": 2
       },
       "base_success": 0.75,
-      "desc": "2 Linh Thảo + 1 Thanh Trúc Diệp"
+      "desc": "2 Linh Thảo"
     },
     {
-      "id": "thelucnho",
-      "name": "Tiểu Hoàn Thể Lực Đan",
-      "output_id": "thelucnho",
+      "id": "thelucdan",
+      "name": "Thể Lực Đan",
+      "output_id": "thelucdan",
       "output_qty": 1,
       "major_min": 1,
       "ingredients": {
         "linhthao": 1,
-        "thanhtrucdiep": 2
+        "loctamthao": 1
       },
-      "base_success": 0.8,
-      "desc": "1 Linh Thảo + 2 Thanh Trúc Diệp"
+      "base_success": 0.7,
+      "desc": "1 Linh Thảo + 1 Lộc Tâm"
     },
     {
       "id": "hotamdan",
       "name": "Hộ Tâm Đan",
       "output_id": "hotamdan",
       "output_qty": 1,
-      "major_min": 1,
+      "major_min": 2,
       "ingredients": {
         "huyenlinhhoa": 2,
         "loctamthao": 1
       },
       "base_success": 0.55,
-      "desc": "2 Huyền Linh Hoa + 1 Lộc Tâm Thảo"
-    },
-    {
-      "id": "hoanglongdan",
-      "name": "Hoàng Long Đan",
-      "output_id": "hoanglongdan",
-      "output_qty": 1,
-      "major_min": 2,
-      "ingredients": {
-        "huyenlinhhoa": 3,
-        "loctamthao": 2
-      },
-      "base_success": 0.5,
-      "desc": "3 Huyền Linh Hoa + 2 Lộc Tâm Thảo"
+      "desc": "2 Huyền Linh Hoa + 1 Lộc Tâm"
     },
     {
       "id": "tiloidan",
@@ -65,7 +50,72 @@
         "loctamthao": 1
       },
       "base_success": 0.45,
-      "desc": "2 Huyền Linh Hoa + 1 Kim Tinh + 1 Lộc Tâm"
+      "desc": "2 Huyền Linh + 1 Kim Tinh + 1 Lộc Tâm"
+    },
+    {
+      "id": "homachdan",
+      "name": "Hộ Mạch Đan",
+      "output_id": "homachdan",
+      "output_qty": 1,
+      "major_min": 2,
+      "ingredients": {
+        "kimtinhthao": 2,
+        "huyenlinhhoa": 1
+      },
+      "base_success": 0.5,
+      "desc": "2 Kim Tinh + 1 Huyền Linh"
+    },
+    {
+      "id": "ngotinhdan",
+      "name": "Ngộ Tính Đan",
+      "output_id": "ngotinhdan",
+      "output_qty": 1,
+      "major_min": 2,
+      "ingredients": {
+        "huyenlinhhoa": 3,
+        "loctamthao": 2
+      },
+      "base_success": 0.4,
+      "desc": "3 Huyền Linh + 2 Lộc Tâm"
+    },
+    {
+      "id": "phachuongdan",
+      "name": "Phá Chướng Đan",
+      "output_id": "phachuongdan",
+      "output_qty": 1,
+      "major_min": 3,
+      "ingredients": {
+        "kimtinhthao": 3,
+        "huyenlinhhoa": 2
+      },
+      "base_success": 0.35,
+      "desc": "3 Kim Tinh + 2 Huyền Linh"
+    },
+    {
+      "id": "kimthandan",
+      "name": "Kim Thân Đan",
+      "output_id": "kimthandan",
+      "output_qty": 1,
+      "major_min": 3,
+      "ingredients": {
+        "kimtinhthao": 4,
+        "huyenlinhhoa": 2,
+        "loctamthao": 2
+      },
+      "base_success": 0.3,
+      "desc": "4 Kim Tinh + 2 Huyền Linh + 2 Lộc Tâm"
+    },
+    {
+      "id": "tukhidan",
+      "name": "Tụ Khí Đan",
+      "output_id": "linhdan",
+      "output_qty": 1,
+      "major_min": 1,
+      "ingredients": {
+        "linhthao": 2
+      },
+      "base_success": 0.8,
+      "desc": "2 Linh Thảo → Linh Đan"
     }
   ]
 }

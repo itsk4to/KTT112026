@@ -232,6 +232,9 @@ class PlayerService:
             raise ValueError(f"Chưa đủ Tu Vi ({player.cultivation:,}/{need:,}). Hãy `.tu` thêm.")
         if player.minor_stage >= 2:
             raise ValueError("Đã Hậu Kỳ — dùng `.dokiep` để vượt Đại Cảnh Giới.")
+        # G14: ép chọn đạo trước khi vào Hậu Kỳ (tiểu cảnh 3)
+        if player.minor_stage >= 1 and not player.path:
+            raise ValueError("Cần `.chon tien` hoặc `.chon ma` trước khi đột phá lên Hậu Kỳ.")
 
         # Success rate: base 55% + Ngộ Tính * 0.35 + Căn Cốt * 0.1, cap 92%
         rate = 0.55 + player.stats.ngo_tinh * 0.0035 + player.stats.can_cot * 0.001

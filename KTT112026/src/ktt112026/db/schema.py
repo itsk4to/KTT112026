@@ -1,7 +1,7 @@
 """Schema v7 — partner / songtu."""
 from __future__ import annotations
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 12
 
 DDL = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS players (
     dokiep_fail_loss_pct INTEGER NOT NULL DEFAULT 20,
     dokiep_remove_wrong INTEGER NOT NULL DEFAULT 0,
     dokiep_extra_shield INTEGER NOT NULL DEFAULT 0,
+    daily_streak INTEGER NOT NULL DEFAULT 0,
+    last_daily_day TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
@@ -73,6 +75,16 @@ CREATE TABLE IF NOT EXISTS item_use_limits (
     day_count INTEGER NOT NULL DEFAULT 0,
     life_count INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY(user_id, item_id)
+);
+
+CREATE TABLE IF NOT EXISTS daily_progress (
+    user_id TEXT NOT NULL,
+    day_key TEXT NOT NULL,
+    tu_count INTEGER NOT NULL DEFAULT 0,
+    explore_count INTEGER NOT NULL DEFAULT 0,
+    tower_count INTEGER NOT NULL DEFAULT 0,
+    claimed_mask INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY(user_id, day_key)
 );
 
 CREATE TABLE IF NOT EXISTS redeem_codes (
@@ -138,6 +150,8 @@ def ensure_schema(db) -> None:
         ("dokiep_fail_loss_pct", "INTEGER NOT NULL DEFAULT 20"),
         ("dokiep_remove_wrong", "INTEGER NOT NULL DEFAULT 0"),
         ("dokiep_extra_shield", "INTEGER NOT NULL DEFAULT 0"),
+        ("daily_streak", "INTEGER NOT NULL DEFAULT 0"),
+        ("last_daily_day", "TEXT NOT NULL DEFAULT ''"),
     ]:
         if col not in cols:
             try:

@@ -52,7 +52,8 @@ class ShopService:
             raise ValueError("Cảnh giới chưa đủ để mua vật phẩm này.")
         if player.path and item.get("path") in {"tien", "ma"} and player.path != item["path"]:
             raise ValueError("Vật phẩm không khớp Đạo Lộ (Tiên/Ma).")
-        total = int(item["price"]) * qty
+        unit = self._price_for(player, int(item["price"]))
+        total = unit * qty
         if player.spirit_stones < total:
             raise ValueError(f"Không đủ Linh Thạch (cần {total:,}, đang có {player.spirit_stones:,}).")
         player.spirit_stones -= total

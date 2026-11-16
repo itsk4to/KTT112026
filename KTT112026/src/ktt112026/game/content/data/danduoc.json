@@ -8,8 +8,13 @@
       "major_min": 1,
       "stage_min": 0,
       "price": 300,
-      "effect": { "type": "cultivation_flat", "amount": 500 },
-      "limits": { "per_day": 20 },
+      "effect": {
+        "type": "cultivation_flat",
+        "amount": 500
+      },
+      "limits": {
+        "per_day": 20
+      },
       "side_effects": [],
       "desc": "Nhận ngay +500 Tu Vi"
     },
@@ -20,8 +25,13 @@
       "major_min": 1,
       "stage_min": 2,
       "price": 1000,
-      "effect": { "type": "cultivation_flat", "amount": 1500 },
-      "limits": { "per_day": 15 },
+      "effect": {
+        "type": "cultivation_flat",
+        "amount": 1500
+      },
+      "limits": {
+        "per_day": 15
+      },
       "side_effects": [],
       "desc": "Nhận ngay +1,500 Tu Vi"
     },
@@ -32,8 +42,13 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 3500,
-      "effect": { "type": "cultivation_flat", "amount": 6000 },
-      "limits": { "per_day": 15 },
+      "effect": {
+        "type": "cultivation_flat",
+        "amount": 6000
+      },
+      "limits": {
+        "per_day": 15
+      },
       "side_effects": [],
       "desc": "Nhận ngay +6,000 Tu Vi"
     },
@@ -44,8 +59,13 @@
       "major_min": 3,
       "stage_min": 0,
       "price": 25000,
-      "effect": { "type": "cultivation_flat", "amount": 55000 },
-      "limits": { "per_day": 10 },
+      "effect": {
+        "type": "cultivation_flat",
+        "amount": 55000
+      },
+      "limits": {
+        "per_day": 10
+      },
       "side_effects": [],
       "desc": "Nhận ngay +55,000 Tu Vi"
     },
@@ -56,8 +76,13 @@
       "major_min": 4,
       "stage_min": 0,
       "price": 150000,
-      "effect": { "type": "cultivation_flat", "amount": 400000 },
-      "limits": { "per_day": 10 },
+      "effect": {
+        "type": "cultivation_flat",
+        "amount": 400000
+      },
+      "limits": {
+        "per_day": 10
+      },
       "side_effects": [],
       "desc": "Nhận ngay +400,000 Tu Vi"
     },
@@ -68,8 +93,13 @@
       "major_min": 5,
       "stage_min": 0,
       "price": 900000,
-      "effect": { "type": "cultivation_flat", "amount": 3000000 },
-      "limits": { "per_day": 5 },
+      "effect": {
+        "type": "cultivation_flat",
+        "amount": 3000000
+      },
+      "limits": {
+        "per_day": 5
+      },
       "side_effects": [],
       "desc": "Nhận ngay +3,000,000 Tu Vi"
     },
@@ -80,8 +110,13 @@
       "major_min": 6,
       "stage_min": 0,
       "price": 5000000,
-      "effect": { "type": "cultivation_flat", "amount": 25000000 },
-      "limits": { "per_day": 3 },
+      "effect": {
+        "type": "cultivation_flat",
+        "amount": 25000000
+      },
+      "limits": {
+        "per_day": 3
+      },
       "side_effects": [],
       "desc": "Nhận ngay +25,000,000 Tu Vi"
     },
@@ -92,9 +127,19 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 12000,
-      "effect": { "type": "cultivate_bonus_pct", "amount": 30, "charges": 30 },
+      "effect": {
+        "type": "cultivate_bonus_pct",
+        "amount": 30,
+        "charges": 30
+      },
       "limits": {},
-      "side_effects": [{ "stat": "than_phap", "delta": -5, "duration_tu": 30 }],
+      "side_effects": [
+        {
+          "stat": "than_phap",
+          "delta": -5,
+          "duration_tu": 30
+        }
+      ],
       "desc": "+30% Tu Vi khi .tu trong 30 lần kế tiếp"
     },
     {
@@ -104,8 +149,13 @@
       "major_min": 1,
       "stage_min": 2,
       "price": 2500,
-      "effect": { "type": "dokiep_damage_reduce_pct", "amount": 20 },
-      "limits": { "per_dokiep": 1 },
+      "effect": {
+        "type": "dokiep_damage_reduce_pct",
+        "amount": 20
+      },
+      "limits": {
+        "per_dokiep": 1
+      },
       "side_effects": [],
       "desc": "Giảm 20% sát thương Lôi Kiếp lần .dokiep tới"
     },
@@ -116,8 +166,16 @@
       "major_min": 2,
       "stage_min": 2,
       "price": 15000,
-      "effect": { "type": "dokiep_remove_wrong", "rounds": [1, 2] },
-      "limits": { "stack": false },
+      "effect": {
+        "type": "dokiep_remove_wrong",
+        "rounds": [
+          1,
+          2
+        ]
+      },
+      "limits": {
+        "stack": false
+      },
       "side_effects": [],
       "desc": "Loại 1 phương án sai ở vòng 1 & 2 khi .dokiep"
     },
@@ -128,9 +186,19 @@
       "major_min": 2,
       "stage_min": 2,
       "price": 25000,
-      "effect": { "type": "dokiep_shield_bonus", "amount": 1, "max_shields": 5 },
+      "effect": {
+        "type": "dokiep_shield_bonus",
+        "amount": 1,
+        "max_shields": 5
+      },
       "limits": {},
-      "side_effects": [{ "stat": "atk_pct", "delta": -5, "battles": 5 }],
+      "side_effects": [
+        {
+          "stat": "atk_pct",
+          "delta": -5,
+          "battles": 5
+        }
+      ],
       "desc": "+1 thanh Hộ Thể khi .dokiep (tối đa 5)"
     },
     {
@@ -140,7 +208,10 @@
       "major_min": 3,
       "stage_min": 2,
       "price": 120000,
-      "effect": { "type": "dokiep_fail_loss_pct", "amount": 5 },
+      "effect": {
+        "type": "dokiep_fail_loss_pct",
+        "amount": 5
+      },
       "limits": {},
       "side_effects": [],
       "desc": "Thất bại chỉ trừ 5% Tu Vi (thay vì 20%)"
@@ -152,9 +223,18 @@
       "major_min": 4,
       "stage_min": 2,
       "price": 600000,
-      "effect": { "type": "dokiep_remove_wrong_all_rounds", "amount": 1 },
+      "effect": {
+        "type": "dokiep_remove_wrong_all_rounds",
+        "amount": 1
+      },
       "limits": {},
-      "side_effects": [{ "stat": "khi_van", "delta": -10, "permanent": true }],
+      "side_effects": [
+        {
+          "stat": "khi_van",
+          "delta": -10,
+          "permanent": true
+        }
+      ],
       "desc": "Loại 1 đáp án sai cả 5 vòng | -10 Khí Vận vĩnh viễn"
     },
     {
@@ -164,8 +244,13 @@
       "major_min": 5,
       "stage_min": 2,
       "price": 3500000,
-      "effect": { "type": "dokiep_first_miss_immune_and_shield", "shield": 1 },
-      "limits": { "per_life": 1 },
+      "effect": {
+        "type": "dokiep_first_miss_immune_and_shield",
+        "shield": 1
+      },
+      "limits": {
+        "per_life": 1
+      },
       "side_effects": [],
       "desc": "Miễn lần chọn sai đầu +1 Hộ Thể (1 lần/đời)"
     },
@@ -176,8 +261,14 @@
       "major_min": 1,
       "stage_min": 0,
       "price": 10000,
-      "effect": { "type": "stat_permanent", "can_cot": 3, "ngo_tinh": 2 },
-      "limits": { "per_life": 5 },
+      "effect": {
+        "type": "stat_permanent",
+        "can_cot": 3,
+        "ngo_tinh": 2
+      },
+      "limits": {
+        "per_life": 5
+      },
       "side_effects": [],
       "desc": "+3 Căn Cốt, +2 Ngộ Tính vĩnh viễn"
     },
@@ -188,8 +279,14 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 30000,
-      "effect": { "type": "stat_permanent", "ngo_tinh": 4, "than_thuc": 2 },
-      "limits": { "per_life": 5 },
+      "effect": {
+        "type": "stat_permanent",
+        "ngo_tinh": 4,
+        "than_thuc": 2
+      },
+      "limits": {
+        "per_life": 5
+      },
       "side_effects": [],
       "desc": "+4 Ngộ Tính, +2 Thần Thức vĩnh viễn"
     },
@@ -200,9 +297,20 @@
       "major_min": 3,
       "stage_min": 0,
       "price": 100000,
-      "effect": { "type": "stat_permanent", "than_thuc": 5 },
-      "limits": { "per_life": 5 },
-      "side_effects": [{ "stat": "can_cot", "delta": -2, "permanent": true }],
+      "effect": {
+        "type": "stat_permanent",
+        "than_thuc": 5
+      },
+      "limits": {
+        "per_life": 5
+      },
+      "side_effects": [
+        {
+          "stat": "can_cot",
+          "delta": -2,
+          "permanent": true
+        }
+      ],
       "desc": "+5 Thần Thức | -2 Căn Cốt"
     },
     {
@@ -212,9 +320,20 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 30000,
-      "effect": { "type": "stat_permanent", "than_phap": 5 },
-      "limits": { "per_life": 5 },
-      "side_effects": [{ "stat": "def", "delta": -2, "permanent": true }],
+      "effect": {
+        "type": "stat_permanent",
+        "than_phap": 5
+      },
+      "limits": {
+        "per_life": 5
+      },
+      "side_effects": [
+        {
+          "stat": "def",
+          "delta": -2,
+          "permanent": true
+        }
+      ],
       "desc": "+5 Thân Pháp | -2 DEF gốc"
     },
     {
@@ -224,8 +343,13 @@
       "major_min": 3,
       "stage_min": 0,
       "price": 150000,
-      "effect": { "type": "stat_permanent", "khi_van": 5 },
-      "limits": { "per_life": 3 },
+      "effect": {
+        "type": "stat_permanent",
+        "khi_van": 5
+      },
+      "limits": {
+        "per_life": 3
+      },
       "side_effects": [],
       "desc": "+5 Khí Vận vĩnh viễn"
     },
@@ -236,9 +360,17 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 80000,
-      "effect": { "type": "root_quality_up", "steps": 1, "success_rate": 0.6 },
+      "effect": {
+        "type": "root_quality_up",
+        "steps": 1,
+        "success_rate": 0.6
+      },
       "limits": {},
-      "side_effects": [{ "type": "consume_on_fail" }],
+      "side_effects": [
+        {
+          "type": "consume_on_fail"
+        }
+      ],
       "desc": "Nâng phẩm linh căn 1 bậc (60% thành công)"
     },
     {
@@ -248,9 +380,23 @@
       "major_min": 4,
       "stage_min": 0,
       "price": 1500000,
-      "effect": { "type": "root_quality_to_high", "targets": ["thien", "hon_don"], "success_rate": 0.35 },
+      "effect": {
+        "type": "root_quality_to_high",
+        "targets": [
+          "thien",
+          "hon_don"
+        ],
+        "success_rate": 0.35
+      },
       "limits": {},
-      "side_effects": [{ "stat": "can_cot", "delta": -10, "on_fail": true, "permanent": true }],
+      "side_effects": [
+        {
+          "stat": "can_cot",
+          "delta": -10,
+          "on_fail": true,
+          "permanent": true
+        }
+      ],
       "desc": "Nâng lên Thiên/Hỗn Độn (35%); xịt -10 Căn Cốt"
     },
     {
@@ -260,7 +406,9 @@
       "major_min": 1,
       "stage_min": 0,
       "price": 400,
-      "effect": { "type": "heal_full_out_of_combat" },
+      "effect": {
+        "type": "heal_full_out_of_combat"
+      },
       "limits": {},
       "side_effects": [],
       "desc": "Hồi 100% HP và 50% MP ngoài trận"
@@ -272,7 +420,12 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 2000,
-      "effect": { "type": "buff", "atk_pct": 15, "def_pct": 15, "battles": 3 },
+      "effect": {
+        "type": "buff",
+        "atk_pct": 15,
+        "def_pct": 15,
+        "battles": 3
+      },
       "limits": {},
       "side_effects": [],
       "desc": "+15% ATK và DEF trong 3 trận"
@@ -284,9 +437,19 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 8000,
-      "effect": { "type": "buff", "atk_pct": 30, "battles": 3 },
+      "effect": {
+        "type": "buff",
+        "atk_pct": 30,
+        "battles": 3
+      },
       "limits": {},
-      "side_effects": [{ "stat": "can_cot", "delta": -2, "permanent": true }],
+      "side_effects": [
+        {
+          "stat": "can_cot",
+          "delta": -2,
+          "permanent": true
+        }
+      ],
       "desc": "+30% ATK 3 trận | -2 Căn Cốt vĩnh viễn mỗi lần"
     },
     {
@@ -296,11 +459,24 @@
       "major_min": 3,
       "stage_min": 0,
       "price": 45000,
-      "effect": { "type": "buff", "atk_pct": 50, "crit_pct": 25, "battles": 2 },
+      "effect": {
+        "type": "buff",
+        "atk_pct": 50,
+        "crit_pct": 25,
+        "battles": 2
+      },
       "limits": {},
       "side_effects": [
-        { "stat": "can_cot", "delta": -4, "permanent": true },
-        { "stat": "khi_van", "delta": -3, "permanent": true }
+        {
+          "stat": "can_cot",
+          "delta": -4,
+          "permanent": true
+        },
+        {
+          "stat": "khi_van",
+          "delta": -3,
+          "permanent": true
+        }
       ],
       "desc": "+50% ATK +25% Bạo 2 trận | -4 Cốt -3 Vận vĩnh viễn"
     },
@@ -311,9 +487,20 @@
       "major_min": 2,
       "stage_min": 2,
       "price": 12000,
-      "effect": { "type": "buff", "def_pct": 40, "damage_taken_pct": -15, "battles": 3 },
+      "effect": {
+        "type": "buff",
+        "def_pct": 40,
+        "damage_taken_pct": -15,
+        "battles": 3
+      },
       "limits": {},
-      "side_effects": [{ "stat": "atk_pct", "delta": -20, "battles": 3 }],
+      "side_effects": [
+        {
+          "stat": "atk_pct",
+          "delta": -20,
+          "battles": 3
+        }
+      ],
       "desc": "+40% DEF, -15% sát thương nhận | -20% ATK 3 trận"
     },
     {
@@ -323,9 +510,19 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 10000,
-      "effect": { "type": "buff", "dodge_pct": 25, "safe_escape_bicanh": 3 },
+      "effect": {
+        "type": "buff",
+        "dodge_pct": 25,
+        "safe_escape_bicanh": 3
+      },
       "limits": {},
-      "side_effects": [{ "stat": "def_pct", "delta": -15, "charges": 3 }],
+      "side_effects": [
+        {
+          "stat": "def_pct",
+          "delta": -15,
+          "charges": 3
+        }
+      ],
       "desc": "+25% Né, thoát hiểm bí cảnh 3 lượt"
     },
     {
@@ -335,9 +532,19 @@
       "major_min": 3,
       "stage_min": 0,
       "price": 35000,
-      "effect": { "type": "buff", "pet_damage_pct": 50, "battles": 3 },
+      "effect": {
+        "type": "buff",
+        "pet_damage_pct": 50,
+        "battles": 3
+      },
       "limits": {},
-      "side_effects": [{ "stat": "than_thuc", "delta": -5, "battles": 3 }],
+      "side_effects": [
+        {
+          "stat": "than_thuc",
+          "delta": -5,
+          "battles": 3
+        }
+      ],
       "desc": "+50% sát thương Linh Thú 3 trận"
     },
     {
@@ -347,9 +554,23 @@
       "major_min": 4,
       "stage_min": 0,
       "price": 250000,
-      "effect": { "type": "revive", "hp_pct": 50, "contexts": ["thap", "bicanh"] },
-      "limits": { "per_battle": 1 },
-      "side_effects": [{ "type": "cultivation_gain_pct", "delta": -10 }],
+      "effect": {
+        "type": "revive",
+        "hp_pct": 50,
+        "contexts": [
+          "thap",
+          "bicanh"
+        ]
+      },
+      "limits": {
+        "per_battle": 1
+      },
+      "side_effects": [
+        {
+          "type": "cultivation_gain_pct",
+          "delta": -10
+        }
+      ],
       "desc": "Hồi sinh 50% HP khi bị hạ ở tháp/bí cảnh"
     },
     {
@@ -359,8 +580,13 @@
       "major_min": 1,
       "stage_min": 0,
       "price": 600,
-      "effect": { "type": "stamina_flat", "amount": 30 },
-      "limits": { "per_day": 5 },
+      "effect": {
+        "type": "stamina_flat",
+        "amount": 30
+      },
+      "limits": {
+        "per_day": 5
+      },
       "side_effects": [],
       "desc": "+30 Thể Lực"
     },
@@ -371,8 +597,13 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 2500,
-      "effect": { "type": "stamina_flat", "amount": 80 },
-      "limits": { "per_day": 3 },
+      "effect": {
+        "type": "stamina_flat",
+        "amount": 80
+      },
+      "limits": {
+        "per_day": 3
+      },
       "side_effects": [],
       "desc": "+80 Thể Lực"
     },
@@ -383,8 +614,14 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 5000,
-      "effect": { "type": "alchemy_success_pct", "amount": 20, "charges": 1 },
-      "limits": { "stack": false },
+      "effect": {
+        "type": "alchemy_success_pct",
+        "amount": 20,
+        "charges": 1
+      },
+      "limits": {
+        "stack": false
+      },
       "side_effects": [],
       "desc": "+20% tỷ lệ thành công lần .luyendan kế"
     },
@@ -395,9 +632,23 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 15000,
-      "effect": { "type": "buff", "khi_van": 25, "charges": 5, "contexts": ["bicanh", "haiduoc"] },
+      "effect": {
+        "type": "buff",
+        "khi_van": 25,
+        "charges": 5,
+        "contexts": [
+          "bicanh",
+          "haiduoc"
+        ]
+      },
       "limits": {},
-      "side_effects": [{ "stat": "atk_pct", "delta": -15, "charges": 5 }],
+      "side_effects": [
+        {
+          "stat": "atk_pct",
+          "delta": -15,
+          "charges": 5
+        }
+      ],
       "desc": "+25 Khí Vận 5 lượt bí cảnh/hái dược"
     },
     {
@@ -407,8 +658,13 @@
       "major_min": 2,
       "stage_min": 0,
       "price": 20000,
-      "effect": { "type": "songtu_mult", "amount": 2 },
-      "limits": { "per_day": 1 },
+      "effect": {
+        "type": "songtu_mult",
+        "amount": 2
+      },
+      "limits": {
+        "per_day": 1
+      },
       "side_effects": [],
       "desc": "x2 Tu Vi khi .songtu (cả hai, 1 lần/ngày)"
     },
@@ -419,10 +675,68 @@
       "major_min": 3,
       "stage_min": 0,
       "price": 500000,
-      "effect": { "type": "clear_forbidden_penalties" },
+      "effect": {
+        "type": "clear_forbidden_penalties"
+      },
       "limits": {},
-      "side_effects": [{ "type": "cultivation_current_pct", "delta": -10 }],
+      "side_effects": [
+        {
+          "type": "cultivation_current_pct",
+          "delta": -10
+        }
+      ],
       "desc": "Tẩy penalty Đan Cấm | -10% Tu Vi hiện tại"
+    },
+    {
+      "id": "linhdan",
+      "name": "Linh Đan",
+      "group": "tuvi",
+      "tier": 1,
+      "price": 40,
+      "major_min": 1,
+      "effect": {
+        "type": "cultivation_flat",
+        "amount": 80
+      },
+      "limits": {
+        "per_day": 10
+      },
+      "side_effects": [],
+      "desc": "Tăng một ít Tu Vi"
+    },
+    {
+      "id": "thelucdan",
+      "name": "Thể Lực Đan",
+      "group": "theluc",
+      "tier": 1,
+      "price": 35,
+      "major_min": 1,
+      "effect": {
+        "type": "stamina_flat",
+        "amount": 25
+      },
+      "limits": {
+        "per_day": 8
+      },
+      "side_effects": [],
+      "desc": "Hồi thể lực"
+    },
+    {
+      "id": "ngotinhdan",
+      "name": "Ngộ Tính Đan",
+      "group": "stats",
+      "tier": 2,
+      "price": 400,
+      "major_min": 2,
+      "effect": {
+        "type": "stat_permanent",
+        "ngo_tinh": 1
+      },
+      "limits": {
+        "per_life": 20
+      },
+      "side_effects": [],
+      "desc": "+1 Ngộ Tính vĩnh viễn"
     }
   ]
 }

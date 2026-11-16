@@ -57,6 +57,8 @@ def _row_to_player(row: Any) -> Player:
         dokiep_remove_wrong=int(g("dokiep_remove_wrong") or 0),
         dokiep_fail_loss_pct=int(g("dokiep_fail_loss_pct") or 20),
         dokiep_first_immune=int(g("dokiep_first_immune") or 0),
+        last_daily_day=str(g("last_daily_day") or ""),
+        daily_streak=int(g("daily_streak") or 0),
         created_at=int(row["created_at"]),
         updated_at=int(row["updated_at"]),
     )
@@ -121,6 +123,7 @@ class PlayerRepository:
                 last_gather_day=?, gather_count_today=?, last_bicanh_at=?,
                 partner_id=?, last_songtu_at=?, last_stamina_tick=?,
                 dokiep_extra_shield=?, dokiep_remove_wrong=?, dokiep_fail_loss_pct=?, dokiep_first_immune=?,
+                last_daily_day=?, daily_streak=?,
                 updated_at=?
             WHERE user_id=?""",
             (
@@ -136,6 +139,7 @@ class PlayerRepository:
                 player.partner_id, player.last_songtu_at, player.last_stamina_tick,
                 player.dokiep_extra_shield, player.dokiep_remove_wrong,
                 player.dokiep_fail_loss_pct, player.dokiep_first_immune,
+                player.last_daily_day, player.daily_streak,
                 player.updated_at, player.user_id,
             ),
         )

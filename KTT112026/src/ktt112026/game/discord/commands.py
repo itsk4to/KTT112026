@@ -15,6 +15,8 @@ from ktt112026.game.services.shop_service import ShopService
 from ktt112026.game.services.alchemy_service import AlchemyService
 from ktt112026.game.services.auction_service import AuctionService
 from ktt112026.game.services.code_service import CodeService
+from ktt112026.game.services.daily_service import DailyService
+from ktt112026.game.services.quest_service import QuestService
 from ktt112026.game.services.economy_service import EconomyService
 from ktt112026.game.services.leaderboard_service import LeaderboardService
 from ktt112026.game.services.partner_service import PartnerService
@@ -63,6 +65,8 @@ class GameCommands(commands.Cog):
         leaderboard: LeaderboardService,
         auction: AuctionService,
         codes: CodeService,
+        daily: DailyService,
+        quests: QuestService,
     ) -> None:
         self.bot = bot
         self.players = players
@@ -82,6 +86,8 @@ class GameCommands(commands.Cog):
         self.leaderboard = leaderboard
         self.auction = auction
         self.codes = codes
+        self.daily = daily
+        self.quests = quests
 
     async def _img(self, ctx: commands.Context, png: bytes, name: str = "card.png", view=None) -> None:
         file = discord.File(BytesIO(png), filename=name)
@@ -153,6 +159,7 @@ class GameCommands(commands.Cog):
             await ctx.reply(str(exc), mention_author=False)
             return
         p = result["player"]
+        self.quests.bump(str(ctx.author.id), "tu", int(result.get("ticks") or 1))
         # annotate batch on card via advanced flag text path
         advanced = bool(result.get("locked"))
         await self._img(
@@ -215,6 +222,55 @@ class GameCommands(commands.Cog):
         detail = " · ".join(parts) + f" · Còn {r['stones_left']:,} LS"
         await self._img(ctx, render_simple_result(title=f"Đã nhập {r['code']}", detail=detail[:140]))
 
+
+
+    @commands.command(name="nhiemvu", aliases=("quest", "nv"))
+    async def nhiemvu(self, ctx: commands.Context) -> None:
+        try:
+            st = self.quests.status(str(ctx.author.id))
+        except ValueError as exc:
+            await ctx.reply(str(exc), mention_author=False)
+            return
+        lines = []
+        for q in st["quests"]:
+            flag = "✅" if q["claimed"] else ("🎁" if q["claimable"] else "⬜")
+            lines.append(f"{flag} **{q['name']}** {q['current']}/{q['need']} (+{q['stones']} LS)")
+        bonus = (
+            "✅ Toàn thành" if st["all_claimed"]
+            else ("🎁 Toàn thành sẵn sàng" if st["all_claimable"] else "⬜ Toàn thành (+%s LS)" % st["all_clear_stones"])
+        )
+        lines.append(bonus)
+        lines.append("Nhận: `.nhannv` hoặc `.nhannv tu|bicanh|thap|full`")
+        await ctx.reply("\n".join(lines), mention_author=False)
+
+    @commands.command(name="nhannv", aliases=("claimquest",))
+    async def nhannv(self, ctx: commands.Context, quest_id: str | None = None) -> None:
+        try:
+            r = self.quests.claim(str(ctx.author.id), quest_id)
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Chưa nhận được", detail=str(exc), ok=False))
+            return
+        names = ", ".join(r["names"])
+        await self._img(
+            ctx,
+            render_simple_result(title="Nhận nhiệm vụ", detail=f"{names} · +{r['stones']:,} LS"),
+        )
+
+    @commands.command(name="diemdanh", aliases=("daily", "checkin"))
+    async def diemdanh(self, ctx: commands.Context) -> None:
+        try:
+            r = self.daily.claim(str(ctx.author.id))
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Điểm danh", detail=str(exc), ok=False))
+            return
+        await self._img(
+            ctx,
+            render_simple_result(
+                title=f"Điểm danh · chuỗi {r['streak']} ngày",
+                detail=f"+{r['stones']:,} LS · +{r['stamina']} TL",
+            ),
+        )
+
     @commands.command(name="help", aliases=("huongdan", "trogiup"))
     async def help_game(self, ctx: commands.Context) -> None:
         text = (
@@ -223,6 +279,7 @@ class GameCommands(commands.Cog):
             "**Đạo lộ:** `.chon tien|ma` · `.gianhap tongmon|tantu`\n"
             "**Đồ:** `.mua` `.dung` `.hoc` `.tui` `.mac` · **Thú:** `.trieuhoi` `.mang`\n"
             "**Xã hội:** `.chuyen` `.ban` `.bxh` `.ketduyen` `.songtu` · **Code:** `.code <ma>`\n"
+            "**Ngày:** `.diemdanh` `.nhiemvu` `.nhannv` · **Bí cảnh:** `.bicanh <id>`\n"
             "Thể lực hồi offline (~2 phút/điểm). Chi tiết: xem `.me`"
         )
         await ctx.reply(text.replace("\\n", "\n"), mention_author=False)
@@ -273,6 +330,7 @@ class GameCommands(commands.Cog):
     async def thap(self, ctx: commands.Context) -> None:
         try:
             run = self.tower.start(str(ctx.author.id))
+            self.quests.bump(str(ctx.author.id), "thap", 1)
         except ValueError as exc:
             await self._img(ctx, render_simple_result(title="Không leo tháp được", detail=str(exc), ok=False))
             return
@@ -412,24 +470,29 @@ class GameCommands(commands.Cog):
 
     @commands.command(name="bicanh")
     async def bicanh(self, ctx: commands.Context, zone_id: str | None = None) -> None:
-        if zone_id in ("list", "ds", "help"):
+        if zone_id is None:
             zones = self.exploration.list_zones()
-            detail = " · ".join(f"{z['id']}: {z['name']} ({z['req_label']})" for z in zones)
-            await self._img(ctx, render_simple_result(title="Bí cảnh", detail=detail[:140]))
+            lines = [f"`{z['id']}` {z['name']} (C{z['major_min']}+) — {z.get('desc','')}" for z in zones[:8]]
+            await ctx.reply("**Bí cảnh:** `.bicanh <id>`\n" + "\n".join(lines), mention_author=False)
             return
         try:
-            result = self.exploration.explore(str(ctx.author.id), zone_id)
+            r = self.exploration.explore(str(ctx.author.id), zone_id)
+            self.quests.bump(str(ctx.author.id), "bicanh", 1)
         except ValueError as exc:
-            await self._img(ctx, render_simple_result(title="Không vào bí cảnh", detail=str(exc), ok=False))
+            await self._img(ctx, render_simple_result(title="Không vào được", detail=str(exc), ok=False))
             return
-        z = result["zone"]
-        herb = result["herb"]
-        herb_txt = f" · Nhặt {herb['name']}" if herb else ""
+        notes = " · ".join(r.get("event_notes") or [])
         detail = (
-            f"{z['name']} | +{result['stones']:,} LS +{result['cultivation']:,} Tu Vi"
-            f"{herb_txt} | Yêu cầu {result['req_label']}"
+            f"{r['zone']['name']}: +{r['stones']:,} LS · +{r['cultivation']:,} TV · "
+            f"thảo {r['herb_summary']} · {notes}"
+        )[:150]
+        await self._img(
+            ctx,
+            render_simple_result(title=f"Bí cảnh · {r.get('event','?')}", detail=detail),
         )
-        await self._img(ctx, render_simple_result(title="Khám phá bí cảnh", detail=detail[:150]))
+        if r.get("locked"):
+            await ctx.reply("Tu Vi đầy — `.dp` hoặc `.dokiep`.", mention_author=False)
+
 
     @commands.command(name="haiduoc")
     async def haiduoc(self, ctx: commands.Context) -> None:
@@ -641,10 +704,12 @@ async def setup_game(
     leaderboard: LeaderboardService,
     auction: AuctionService,
     codes: CodeService,
+    daily: DailyService,
+    quests: QuestService,
 ) -> None:
     await bot.add_cog(
         GameCommands(
             bot, players, shop, dokiep, tower, inventory, items, techniques, stats,
-            pets, exploration, gather, alchemy, economy, partners, leaderboard, auction, codes,
+            pets, exploration, gather, alchemy, economy, partners, leaderboard, auction, codes, daily, quests,
         )
     )

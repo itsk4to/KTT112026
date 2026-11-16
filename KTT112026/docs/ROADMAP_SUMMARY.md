@@ -1,6 +1,6 @@
 # Lộ trình ngắn — KTT112026
 
-**Version code:** 0.10.0 · **GDD:** V2 · **Chi tiết:** `docs/PROJECT_STATUS_V2.md`
+**Version code:** 1.1.0 · **GDD:** V2 · **Chi tiết:** `docs/PROJECT_STATUS_V2.md`
 
 ## Đã xong (khung)
 Phase A–D cũ: dùng đồ, thú/bí cảnh/đan tối thiểu, chuyển-bán-BXH-song tu, UX `.me` + lọc shop.
@@ -25,8 +25,8 @@ Phase A–D cũ: dùng đồ, thú/bí cảnh/đan tối thiểu, chuyển-bán-
 - [ ] Cân source/sink LS theo cảnh giới
 
 ### Phase H — PvE & đan
-- [ ] Thêm zone / event bí cảnh
-- [ ] Mở rộng công thức luyện đan
+- [x] Thêm zone / event bí cảnh
+- [x] Mở rộng công thức luyện đan
 
 ### Phase I — UI Thẻ 2
 - [ ] Gradient Tiên/Ma + khung theo đại cảnh giới
@@ -36,3 +36,14 @@ Phase A–D cũ: dùng đồ, thú/bí cảnh/đan tối thiểu, chuyển-bán-
 
 ## Không ưu tiên
 Node/Chart.js rewrite · PVP · full map một lần
+
+
+### Gameplay 1.1.0
+- [x] `.diemdanh` chuỗi ngày
+- [x] 6 zones + random events
+- [x] 9 recipes luyện đan
+
+
+### Gameplay 1.2.0
+- [x] `.nhiemvu` / `.nhannv` nhiệm vụ ngày
+- [x] Boss bí cảnh (Cấp 3+)

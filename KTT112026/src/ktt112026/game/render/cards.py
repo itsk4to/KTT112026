@@ -26,6 +26,42 @@ BAR_BG = (40, 44, 60)
 BAR_FILL = (90, 160, 220)
 ACCENT = (120, 90, 200)
 
+def _theme_for(path: str = "", major: int = 1) -> dict:
+    """Palette by Đạo Lộ + khung theo đại cảnh giới (GDD Thẻ 2)."""
+    path = (path or "").lower()
+    if path == "tien":
+        # cyan → soft gold
+        panel = (22, 40, 52)
+        accent = (100, 200, 220)
+        gold = (230, 200, 120)
+        bar = (80, 180, 200)
+        edge = (60, 140, 160)
+    elif path == "ma":
+        # crimson → violet
+        panel = (42, 24, 40)
+        accent = (200, 90, 120)
+        gold = (220, 160, 100)
+        bar = (180, 80, 110)
+        edge = (140, 60, 100)
+    else:
+        panel = PANEL
+        accent = ACCENT
+        gold = GOLD
+        bar = BAR_FILL
+        edge = (70, 80, 100)
+    # frame thickness by major realm
+    frame = 2 + min(6, max(0, major - 1))
+    return {
+        "panel": panel,
+        "accent": accent,
+        "gold": gold,
+        "bar": bar,
+        "edge": edge,
+        "frame": frame,
+    }
+
+
+
 
 def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
     candidates = [
@@ -96,15 +132,19 @@ def render_profile_card(
     title_f = _font(26, bold=True)
     body_f = _font(17)
     small_f = _font(14)
-
-    draw.rounded_rectangle((12, 12, W - 12, H - 12), radius=18, fill=PANEL)
+    th = _theme_for(player.path, player.major_realm)
+    # outer edge by realm
+    draw.rounded_rectangle((8, 8, W - 8, H - 8), radius=20, outline=th["edge"], width=th["frame"])
+    draw.rounded_rectangle((12, 12, W - 12, H - 12), radius=18, fill=th["panel"])
     draw.rounded_rectangle((28, 28, 430, 96), radius=12, fill=(36, 40, 58))
 
     name = player.display_name[:22]
     realm = realm_display(player.major_realm, player.minor_stage, player.path)
     path_label = {"tien": "Tiên Đạo", "ma": "Ma Đạo"}.get(player.path, "Chưa chọn Đạo")
     faction_label = {"tongmon": "Tông Môn", "tantu": "Tán Tu"}.get(player.faction, "Chưa gia nhập")
-    draw.text((42, 38), name, font=title_f, fill=GOLD)
+    draw.text((42, 38), name, font=title_f, fill=th["gold"])
+    path_lbl = "Tiên Đạo" if player.path == "tien" else ("Ma Đạo" if player.path == "ma" else "Chưa phân đạo")
+    draw.text((42, 68), path_lbl, font=small_f, fill=th["accent"])
     draw.text((42, 70), f"{realm} · {path_label}", font=small_f, fill=TEXT)
 
     root = (

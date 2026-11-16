@@ -1,9 +1,8 @@
 {
-  "version": 1,
   "zones": [
     {
       "id": "linh_cuc",
-      "name": "Linh Cốc Tàn Phong",
+      "name": "Linh Cốc",
       "major_min": 1,
       "stage_min": 0,
       "stamina_cost": 8,
@@ -18,13 +17,13 @@
       "herb_chance": 0.35,
       "herbs": [
         "linhthao",
-        "thanhtrucdiep"
+        "loctamthao"
       ],
-      "desc": "Cốc nhỏ còn sót linh khí — phù hợp Luyện Khí / Dẫn Khí"
+      "desc": "Cốc linh khí — tân thủ"
     },
     {
       "id": "huyen_lam",
-      "name": "Huyền Lâm Cổ Đạo",
+      "name": "Huyền Lâm",
       "major_min": 2,
       "stage_min": 0,
       "stamina_cost": 12,
@@ -34,15 +33,15 @@
       ],
       "reward_cultivation": [
         120,
-        350
+        280
       ],
       "herb_chance": 0.4,
       "herbs": [
         "huyenlinhhoa",
-        "thanhtrucdiep",
-        "loctamthao"
+        "loctamthao",
+        "kimtinhthao"
       ],
-      "desc": "Rừng cổ — yêu cầu Trúc Cơ / Ngưng Huyết trở lên"
+      "desc": "Rừng huyền — Cấp 2+"
     },
     {
       "id": "loi_dai",
@@ -64,7 +63,73 @@
         "loctamthao",
         "kimtinhthao"
       ],
-      "desc": "Đài lôi — Cấp 3+ (Kim Đan / Ma Đan)"
+      "desc": "Đài lôi — Cấp 3+"
+    },
+    {
+      "id": "huyet_coc",
+      "name": "Huyết Cốc",
+      "major_min": 3,
+      "stage_min": 1,
+      "stamina_cost": 20,
+      "reward_stones": [
+        250,
+        520
+      ],
+      "reward_cultivation": [
+        450,
+        1000
+      ],
+      "herb_chance": 0.25,
+      "herbs": [
+        "huyenlinhhoa",
+        "kimtinhthao"
+      ],
+      "path_bonus": "ma",
+      "desc": "Cốc huyết — thiên về Ma Đạo"
+    },
+    {
+      "id": "tien_uyen",
+      "name": "Tiên Uyển",
+      "major_min": 3,
+      "stage_min": 1,
+      "stamina_cost": 20,
+      "reward_stones": [
+        250,
+        520
+      ],
+      "reward_cultivation": [
+        450,
+        1000
+      ],
+      "herb_chance": 0.25,
+      "herbs": [
+        "loctamthao",
+        "huyenlinhhoa"
+      ],
+      "path_bonus": "tien",
+      "desc": "Uyển tiên — thiên về Tiên Đạo"
+    },
+    {
+      "id": "vo_cuc",
+      "name": "Vực Vô Cực",
+      "major_min": 4,
+      "stage_min": 0,
+      "stamina_cost": 28,
+      "reward_stones": [
+        500,
+        1200
+      ],
+      "reward_cultivation": [
+        1200,
+        2800
+      ],
+      "herb_chance": 0.35,
+      "herbs": [
+        "huyenlinhhoa",
+        "kimtinhthao",
+        "loctamthao"
+      ],
+      "desc": "Vực sâu — Cấp 4+"
     }
   ]
 }

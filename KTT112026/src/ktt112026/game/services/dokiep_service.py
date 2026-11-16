@@ -67,6 +67,8 @@ class DokiepService:
         need = stage_requirement(p.major_realm, p.minor_stage)
         if p.minor_stage < 2 or p.cultivation < need:
             raise ValueError("Cần Hậu Kỳ 100% tu vi mới Độ Kiếp.")
+        if not p.path:
+            raise ValueError("Cần `.chon tien` hoặc `.chon ma` trước khi Độ Kiếp.")
         if p.major_realm >= 6 and p.minor_stage >= 2:
             raise ValueError("Đã ở đỉnh phong Đại Cảnh Giới cao nhất.")
         if str(user_id) in self._sessions and not self._sessions[str(user_id)].finished:
