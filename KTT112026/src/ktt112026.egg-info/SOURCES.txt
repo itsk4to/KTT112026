@@ -1,4 +1,6 @@
+MANIFEST.in
 README.md
+VERSION.txt
 pyproject.toml
 src/ktt112026/__init__.py
 src/ktt112026/__main__.py
@@ -18,6 +20,15 @@ src/ktt112026/game/content/__init__.py
 src/ktt112026/game/content/loader.py
 src/ktt112026/game/content/realms.py
 src/ktt112026/game/content/shop.py
+src/ktt112026/game/content/data/congphap.json
+src/ktt112026/game/content/data/danduoc.json
+src/ktt112026/game/content/data/herbs.json
+src/ktt112026/game/content/data/linhthu.json
+src/ktt112026/game/content/data/phapbao.json
+src/ktt112026/game/content/data/recipes.json
+src/ktt112026/game/content/data/summon.json
+src/ktt112026/game/content/data/vukhi.json
+src/ktt112026/game/content/data/zones.json
 src/ktt112026/game/discord/__init__.py
 src/ktt112026/game/discord/admin_commands.py
 src/ktt112026/game/discord/commands.py

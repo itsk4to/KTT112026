@@ -5,15 +5,19 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# Runtime deps only (game code runs from /app/src so JSON data is always present)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY pyproject.toml README.md ./
-COPY src ./src
-RUN pip install --no-cache-dir .
 
-# Player DB on Railway Volume: mount path /data in the dashboard (do NOT use Docker VOLUME).
-# Set: KTT_DATABASE_PATH=/data/ktt112026.db
-RUN mkdir -p /data
+COPY pyproject.toml README.md VERSION.txt ./
+COPY src ./src
+
+# Prefer source tree over site-packages (includes game/content/data/*.json)
+ENV PYTHONPATH=/app/src
 ENV KTT_DATABASE_PATH=/data/ktt112026.db
+
+RUN mkdir -p /data \
+    && python -c "from pathlib import Path; p=Path('/app/src/ktt112026/game/content/data'); assert (p/'vukhi.json').is_file(), p; print('content ok', len(list(p.glob('*.json'))), 'json')"
 
 CMD ["python", "-m", "ktt112026"]

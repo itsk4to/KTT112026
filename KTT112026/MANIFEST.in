@@ -1,0 +1,3 @@
+recursive-include src/ktt112026/game/content/data *.json
+include VERSION.txt
+include README.md

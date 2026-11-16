@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ktt112026"
-version = "1.0.1"
+version = "1.0.2"
 description = "KTT112026 — Đạo Lộ Tu Tiên: voice + game MVP (image UI)"
 requires-python = ">=3.11"
 readme = "README.md"
@@ -16,6 +16,7 @@ dependencies = [
   "davey>=0.1.0",
   "edge-tts>=6.1.0",
   "imageio-ffmpeg>=0.5.1",
+  "Pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +27,13 @@ ktt112026 = "ktt112026.bot:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# Critical: ship JSON content with the wheel (Railway pip install)
+[tool.setuptools.package-data]
+ktt112026 = [
+  "game/content/data/*.json",
+  "py.typed",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
