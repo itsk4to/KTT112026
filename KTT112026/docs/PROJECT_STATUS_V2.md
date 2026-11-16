@@ -1,7 +1,7 @@
 # Kato Tu Tiên (Đạo Lộ Tu Tiên) — Trạng thái dự án & Lộ trình
 
 **Mã nguồn:** KTT112026  
-**Phiên bản code:** **v1.3.0**  
+**Phiên bản code:** **v1.5.0**  
 **Đối chiếu:** GDD V2 (*Dự Án Kato Tu Tiên V2*)  
 **Cập nhật:** 2026-11-16  
 
@@ -114,5 +114,15 @@ Còn lại chủ yếu: cân LS sâu, polish UI, hardened anti-dupe, feedback cl
 
 ## 7. Kết luận
 
-Bản **v1.3.0** đủ vòng tân thủ → mid game nhẹ.  
+Bản **v1.5.0** đủ vòng tân thủ → mid game nhẹ.  
 Bước tiếp: **playtest + cân bằng**, không phình feature lớn.
+
+
+### v1.5.0
+- Hệ Tông Môn `.tongmon`
+- BXH mới + format 1k
+- `.dung [n]` · `.daolu` · `.info @user` · case-insensitive
+
+
+### v1.5.0 Tông môn cộng đồng
+- mời/kick/chức vụ, BXH nội bộ, cấp tông, quà top tuần

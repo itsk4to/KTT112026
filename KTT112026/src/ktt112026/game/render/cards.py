@@ -446,3 +446,40 @@ def render_tower_card(*, floor: int, risk: str, stones: int, cult: int, alive: b
 
 def render_simple_result(*, title: str, detail: str, ok: bool = True) -> bytes:
     return render_shop_buy_result(ok=ok, title=title, detail=detail)
+
+
+def render_partner_card(
+    *,
+    name: str,
+    partner_name: str,
+    days: int,
+    hours: int,
+    major: int,
+    path: str,
+    last_songtu: str,
+) -> bytes:
+    """Thẻ đạo lữ — tông màu hồng."""
+    W, H = 640, 360
+    bg = (28, 16, 24)
+    panel = (56, 28, 48)
+    pink = (255, 140, 180)
+    soft = (255, 200, 220)
+    text = (255, 240, 245)
+    muted = (200, 160, 180)
+    img = Image.new("RGB", (W, H), bg)
+    draw = ImageDraw.Draw(img)
+    title_f = _font(26, bold=True)
+    body_f = _font(17)
+    small_f = _font(14)
+    draw.rounded_rectangle((10, 10, W - 10, H - 10), radius=18, outline=pink, width=3)
+    draw.rounded_rectangle((16, 16, W - 16, H - 16), radius=14, fill=panel)
+    draw.text((36, 32), "Đạo Lữ", font=title_f, fill=pink)
+    draw.text((36, 80), f"{name}  ♥  {partner_name}", font=body_f, fill=text)
+    path_lbl = "Tiên Đạo" if path == "tien" else ("Ma Đạo" if path == "ma" else "—")
+    draw.text((36, 120), f"Cùng tu: {days} ngày {hours} giờ", font=body_f, fill=soft)
+    draw.text((36, 160), f"Cảnh đối phương: cấp {major} · {path_lbl}", font=small_f, fill=muted)
+    draw.text((36, 200), f"Song tu gần nhất: {last_songtu}", font=small_f, fill=muted)
+    draw.text((36, H - 48), "`.songtu` để cùng tu một lần mỗi ngày", font=small_f, fill=pink)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
