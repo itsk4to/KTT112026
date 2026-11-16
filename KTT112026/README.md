@@ -40,3 +40,5 @@ KTT_DATABASE_PATH=/data/ktt112026.db
 ```
 
 Chi tiết: `docs/RAILWAY_VOLUME.md`.
+
+Phiên bản: xem `VERSION.txt` · quy ước `docs/VERSIONING.md`.

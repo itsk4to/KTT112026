@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: ktt112026
-Version: 0.11.0
+Version: 1.0.1
 Summary: KTT112026 — Đạo Lộ Tu Tiên: voice + game MVP (image UI)
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
@@ -57,3 +57,5 @@ KTT_DATABASE_PATH=/data/ktt112026.db
 ```
 
 Chi tiết: `docs/RAILWAY_VOLUME.md`.
+
+Phiên bản: xem `VERSION.txt` · quy ước `docs/VERSIONING.md`.
