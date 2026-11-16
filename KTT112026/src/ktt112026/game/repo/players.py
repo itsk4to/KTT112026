@@ -59,10 +59,6 @@ def _row_to_player(row: Any) -> Player:
         dokiep_first_immune=int(g("dokiep_first_immune") or 0),
         last_daily_day=str(g("last_daily_day") or ""),
         daily_streak=int(g("daily_streak") or 0),
-        sect_id=str(g("sect_id") or ""),
-        sect_contrib=int(g("sect_contrib") or 0),
-        sect_joined_at=float(g("sect_joined_at") or 0),
-        sect_role=str(g("sect_role") or ""),
         created_at=int(row["created_at"]),
         updated_at=int(row["updated_at"]),
     )
@@ -128,7 +124,6 @@ class PlayerRepository:
                 partner_id=?, last_songtu_at=?, last_stamina_tick=?,
                 dokiep_extra_shield=?, dokiep_remove_wrong=?, dokiep_fail_loss_pct=?, dokiep_first_immune=?,
                 last_daily_day=?, daily_streak=?,
-                sect_id=?, sect_contrib=?, sect_joined_at=?, sect_role=?,
                 updated_at=?
             WHERE user_id=?""",
             (
@@ -145,7 +140,6 @@ class PlayerRepository:
                 player.dokiep_extra_shield, player.dokiep_remove_wrong,
                 player.dokiep_fail_loss_pct, player.dokiep_first_immune,
                 player.last_daily_day, player.daily_streak,
-                player.sect_id, player.sect_contrib, player.sect_joined_at, player.sect_role,
                 player.updated_at, player.user_id,
             ),
         )

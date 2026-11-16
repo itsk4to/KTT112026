@@ -1,7 +1,7 @@
 """Schema v7 — partner / songtu."""
 from __future__ import annotations
 
-SCHEMA_VERSION = 14
+SCHEMA_VERSION = 12
 
 DDL = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -49,10 +49,6 @@ CREATE TABLE IF NOT EXISTS players (
     dokiep_remove_wrong INTEGER NOT NULL DEFAULT 0,
     dokiep_extra_shield INTEGER NOT NULL DEFAULT 0,
     daily_streak INTEGER NOT NULL DEFAULT 0,
-    sect_joined_at REAL NOT NULL DEFAULT 0,
-    sect_role TEXT NOT NULL DEFAULT '',
-    sect_contrib INTEGER NOT NULL DEFAULT 0,
-    sect_id TEXT NOT NULL DEFAULT '',
     last_daily_day TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
@@ -89,30 +85,6 @@ CREATE TABLE IF NOT EXISTS daily_progress (
     tower_count INTEGER NOT NULL DEFAULT 0,
     claimed_mask INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY(user_id, day_key)
-);
-
-CREATE TABLE IF NOT EXISTS sect_state (
-    sect_id TEXT PRIMARY KEY,
-    level INTEGER NOT NULL DEFAULT 1,
-    bank_stones INTEGER NOT NULL DEFAULT 0,
-    leader_id TEXT NOT NULL DEFAULT '',
-    last_weekly_key TEXT NOT NULL DEFAULT ''
-);
-
-CREATE TABLE IF NOT EXISTS sect_invites (
-    sect_id TEXT NOT NULL,
-    inviter_id TEXT NOT NULL,
-    invitee_id TEXT NOT NULL,
-    created_at INTEGER NOT NULL,
-    PRIMARY KEY(sect_id, invitee_id)
-);
-
-CREATE TABLE IF NOT EXISTS sect_weekly_payout (
-    week_key TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    rank INTEGER NOT NULL,
-    reward INTEGER NOT NULL,
-    PRIMARY KEY(week_key, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS redeem_codes (
@@ -179,10 +151,6 @@ def ensure_schema(db) -> None:
         ("dokiep_remove_wrong", "INTEGER NOT NULL DEFAULT 0"),
         ("dokiep_extra_shield", "INTEGER NOT NULL DEFAULT 0"),
         ("daily_streak", "INTEGER NOT NULL DEFAULT 0"),
-        ("sect_joined_at", "REAL NOT NULL DEFAULT 0"),
-        ("sect_role", "TEXT NOT NULL DEFAULT ''"),
-        ("sect_contrib", "INTEGER NOT NULL DEFAULT 0"),
-        ("sect_id", "TEXT NOT NULL DEFAULT ''"),
         ("last_daily_day", "TEXT NOT NULL DEFAULT ''"),
     ]:
         if col not in cols:

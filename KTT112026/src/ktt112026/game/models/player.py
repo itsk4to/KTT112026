@@ -87,10 +87,6 @@ class Player:
     dokiep_first_immune: int = 0
     last_daily_day: str = ""
     daily_streak: int = 0
-    sect_id: str = ""
-    sect_contrib: int = 0
-    sect_joined_at: float = 0.0
-    sect_role: str = ""  # member | elder | leader
     partner_id: str = ""
     last_songtu_at: float = 0.0
     created_at: int = 0

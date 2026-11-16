@@ -26,7 +26,6 @@ src/ktt112026/game/content/data/herbs.json
 src/ktt112026/game/content/data/linhthu.json
 src/ktt112026/game/content/data/phapbao.json
 src/ktt112026/game/content/data/recipes.json
-src/ktt112026/game/content/data/sects.json
 src/ktt112026/game/content/data/summon.json
 src/ktt112026/game/content/data/vukhi.json
 src/ktt112026/game/content/data/zones.json
@@ -61,13 +60,10 @@ src/ktt112026/game/services/partner_service.py
 src/ktt112026/game/services/pet_service.py
 src/ktt112026/game/services/player_service.py
 src/ktt112026/game/services/quest_service.py
-src/ktt112026/game/services/sect_service.py
 src/ktt112026/game/services/shop_service.py
 src/ktt112026/game/services/stats_service.py
 src/ktt112026/game/services/technique_service.py
 src/ktt112026/game/services/tower_service.py
-src/ktt112026/game/util/__init__.py
-src/ktt112026/game/util/formatters.py
 src/ktt112026/voice/__init__.py
 src/ktt112026/voice/commands.py
 src/ktt112026/voice/presence.py

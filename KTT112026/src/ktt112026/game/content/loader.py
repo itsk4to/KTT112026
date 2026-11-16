@@ -81,6 +81,3 @@ def shop_stats_line(item: dict[str, Any]) -> str:
     for k, v in (item.get("penalties") or {}).items():
         parts.append(f"{v} {k}")
     return ", ".join(parts) if parts else ""
-
-def load_sects() -> list[dict]:
-    return list(_load("sects.json")["sects"])
