@@ -66,7 +66,11 @@ def _slug_name(name: str) -> str:
 class SectService:
     def __init__(self, repo: PlayerRepository) -> None:
         self.repo = repo
-        self._npc = {s["id"]: {**s, "npc": True} for s in load_sects()}
+        try:
+            raw = load_sects()
+        except Exception:
+            raw = []
+        self._npc = {s["id"]: {**s, "npc": True} for s in raw}
 
     def all_sects_map(self) -> dict[str, dict]:
         out = dict(self._npc)

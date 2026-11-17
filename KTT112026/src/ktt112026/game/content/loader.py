@@ -82,5 +82,21 @@ def shop_stats_line(item: dict[str, Any]) -> str:
         parts.append(f"{v} {k}")
     return ", ".join(parts) if parts else ""
 
+DEFAULT_NPC_SECTS = [
+    {"id": "thanhvan", "name": "Thanh Vân Tông", "path": "tien", "major_min": 2, "npc": True, "desc": "Chính đạo thanh tu"},
+    {"id": "vankiem", "name": "Vân Kiếm Tông", "path": "tien", "major_min": 2, "npc": True, "desc": "Kiếm tu chính đạo"},
+    {"id": "linhvu", "name": "Linh Vũ Các", "path": "tien", "major_min": 2, "npc": True, "desc": "Phù lục và linh điểu"},
+    {"id": "huyethai", "name": "Huyết Hải Tông", "path": "ma", "major_min": 2, "npc": True, "desc": "Ma đạo huyết hải"},
+    {"id": "vocuc", "name": "Vô Cực Ma Tông", "path": "ma", "major_min": 2, "npc": True, "desc": "Ma đạo huyền ảo"},
+    {"id": "uquy", "name": "U Quỷ Điện", "path": "ma", "major_min": 2, "npc": True, "desc": "Hồn tu ma đạo"},
+    {"id": "hopdao", "name": "Hợp Đạo Các", "path": "any", "major_min": 2, "npc": True, "desc": "Trung lập Tiên Ma"},
+    {"id": "vanvat", "name": "Vạn Vật Cốc", "path": "any", "major_min": 2, "npc": True, "desc": "Dược đạo và linh thú"},
+]
+
+
 def load_sects() -> list[dict]:
-    return list(_load("sects.json")["sects"])
+    try:
+        data = _load("sects.json")
+        return list(data.get("sects") or DEFAULT_NPC_SECTS)
+    except FileNotFoundError:
+        return list(DEFAULT_NPC_SECTS)

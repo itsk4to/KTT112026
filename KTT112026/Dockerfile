@@ -18,6 +18,6 @@ ENV PYTHONPATH=/app/src
 ENV KTT_DATABASE_PATH=/data/ktt112026.db
 
 RUN mkdir -p /data \
-    && python -c "from pathlib import Path; p=Path('/app/src/ktt112026/game/content/data'); assert (p/'vukhi.json').is_file(), p; print('content ok', len(list(p.glob('*.json'))), 'json')"
+    && python -c "from pathlib import Path; p=Path('/app/src/ktt112026/game/content/data'); assert (p/'vukhi.json').is_file(), p; assert (p/'sects.json').is_file(), 'missing sects.json'; print('content ok', len(list(p.glob('*.json'))), 'json')"
 
 CMD ["python", "-m", "ktt112026"]
