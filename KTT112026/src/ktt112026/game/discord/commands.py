@@ -111,7 +111,7 @@ class GameCommands(commands.Cog):
             mention_author=False,
         )
 
-    @commands.command(name="me", aliases=("info", "the"))
+    @commands.command(name="me", aliases=("the", "profile_me"))
     async def me(self, ctx: commands.Context) -> None:
         player = self.players.get(str(ctx.author.id))
         if player is None:
@@ -527,7 +527,7 @@ class GameCommands(commands.Cog):
         )
         await self._img(ctx, png, "daolu.png")
 
-    @commands.command(name="info", aliases=("xem", "profile"))
+    @commands.command(name="info", aliases=("xem", "xemthe", "nguoichoi"))
     async def info_other(self, ctx: commands.Context, user: str | None = None) -> None:
         """Xem thể đạo người khác: `.info @user`"""
         target = None
@@ -588,7 +588,7 @@ class GameCommands(commands.Cog):
             "**Đạo lộ:** `.chon tien|ma` · `.gianhap tongmon|tantu` · `.tongmon`",
             "**Đồ:** `.mua` `.dung <đan> [n]` `.hoc` `.tui` `.mac` · **Thú:** `.trieuhoi` `.mang`",
             "**Xã hội:** `.chuyen` `.ban` `.bxh` `.ketduyen` `.daolu` `.songtu` · **Mã:** `.code <mã>`",
-            "**Ngày:** `.diemdanh` `.nhiemvu` `.nhannv` · **Xem người:** `.info @user`",
+            "**Ngày:** `.diemdanh` `.nhiemvu` `.nhannv` · **Xem người khác:** `.info @user` / `.xemthe @user`",
             "Thể lực hồi ngoại tuyến (~2 phút/điểm). Lệnh không phân biệt hoa/thường.",
         ]
         await ctx.reply("\n".join(lines_help), mention_author=False)
