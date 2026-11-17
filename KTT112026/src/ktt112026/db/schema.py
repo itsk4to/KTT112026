@@ -1,7 +1,7 @@
 """Schema v7 — partner / songtu."""
 from __future__ import annotations
 
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 18
 
 DDL = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS players (
     partner_id TEXT NOT NULL DEFAULT '',
     last_songtu_at REAL NOT NULL DEFAULT 0,
     last_stamina_tick REAL NOT NULL DEFAULT 0,
+    stamina_buy_day TEXT NOT NULL DEFAULT '',
+    stamina_buys_today INTEGER NOT NULL DEFAULT 0,
     dokiep_first_immune INTEGER NOT NULL DEFAULT 0,
     dokiep_fail_loss_pct INTEGER NOT NULL DEFAULT 20,
     dokiep_remove_wrong INTEGER NOT NULL DEFAULT 0,
@@ -154,6 +156,42 @@ CREATE TABLE IF NOT EXISTS auction_listings (
     expires_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS world_event_claims (
+    day_key TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    claimed_at REAL NOT NULL,
+    PRIMARY KEY(day_key, event_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS pvp_challenges (
+    id TEXT PRIMARY KEY,
+    challenger_id TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    wager INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    winner_id TEXT NOT NULL DEFAULT '',
+    created_at REAL NOT NULL,
+    expires_at REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS player_missions (
+    user_id TEXT NOT NULL,
+    mission_id TEXT NOT NULL,
+    progress INTEGER NOT NULL DEFAULT 0,
+    claimed INTEGER NOT NULL DEFAULT 0,
+    updated_at REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY(user_id, mission_id)
+);
+
+CREATE TABLE IF NOT EXISTS sect_tower_runs (
+    user_id TEXT NOT NULL,
+    day_key TEXT NOT NULL,
+    runs INTEGER NOT NULL DEFAULT 0,
+    best_floor INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY(user_id, day_key)
+);
+
 CREATE TABLE IF NOT EXISTS owned_pets (
     user_id TEXT NOT NULL,
     pet_id TEXT NOT NULL,
@@ -183,6 +221,8 @@ def ensure_schema(db) -> None:
         ("partner_id", "TEXT NOT NULL DEFAULT ''"),
         ("last_songtu_at", "REAL NOT NULL DEFAULT 0"),
         ("last_stamina_tick", "REAL NOT NULL DEFAULT 0"),
+        ("stamina_buy_day", "TEXT NOT NULL DEFAULT ''"),
+        ("stamina_buys_today", "INTEGER NOT NULL DEFAULT 0"),
         ("dokiep_first_immune", "INTEGER NOT NULL DEFAULT 0"),
         ("dokiep_fail_loss_pct", "INTEGER NOT NULL DEFAULT 20"),
         ("dokiep_remove_wrong", "INTEGER NOT NULL DEFAULT 0"),

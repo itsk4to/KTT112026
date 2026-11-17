@@ -9,6 +9,7 @@ from typing import Any
 from ktt112026.game.content.loader import load_sects
 from ktt112026.game.repo.players import PlayerRepository
 from ktt112026.game.util.formatters import fmt_num
+from ktt112026.game.rules import sect_rules
 
 LEVEL_THRESHOLDS = [0, 5_000, 20_000, 50_000, 120_000, 250_000, 500_000, 1_000_000]
 # Cống hiến tối thiểu để trở thành chủ tông NPC (khi chưa có chủ hoặc soán ngôi nếu cao hơn rõ)
@@ -153,7 +154,7 @@ class SectService:
         return "leader"
 
     def _is_officer(self, p) -> bool:
-        return (p.sect_role or "") in ("leader", "elder")
+        return sect_rules.has_permission(p.sect_role or "member", "sect.kick")
 
     def list_sects(self, *, npc_only: bool = False) -> list[dict]:
         out = []
@@ -358,12 +359,8 @@ class SectService:
             raise ValueError("Không tìm thấy người chơi.")
         if not actor.sect_id or actor.sect_id != target.sect_id:
             raise ValueError("Hai bên không cùng tông môn.")
-        if not self._is_officer(actor):
-            raise ValueError("Chỉ Tông Chủ / Trưởng Lão mới kick được.")
-        if target.sect_role == "leader":
-            raise ValueError("Không thể kick Tông Chủ.")
-        if target.sect_role == "elder" and actor.sect_role != "leader":
-            raise ValueError("Chỉ Tông Chủ mới kick Trưởng Lão.")
+        if not sect_rules.can_kick(actor.sect_role or "member", target.sect_role or "member"):
+            raise ValueError("Không đủ quyền kick (chỉ quản được chức thấp hơn).")
         if str(actor_id) == str(target_id):
             raise ValueError("Không tự kick — dùng `.tongmon roi`.")
         name = target.display_name
@@ -383,8 +380,18 @@ class SectService:
         target = self.repo.get(str(target_id))
         if not actor or not target or actor.sect_id != target.sect_id or not actor.sect_id:
             raise ValueError("Không cùng tông môn.")
-        if actor.sect_role != "leader":
+        if not sect_rules.has_permission(actor.sect_role or "member", "sect.promote"):
             raise ValueError("Chỉ Tông Chủ được bổ nhiệm.")
+        role = sect_rules.normalize_role(role)
+        if role != "leader":
+            promote = sect_rules.role_rank(role) < sect_rules.role_rank(target.sect_role or "member")
+            if not sect_rules.can_change_role(
+                actor.sect_role or "member",
+                target.sect_role or "member",
+                role,
+                promote=promote,
+            ):
+                raise ValueError("Không thể đổi sang chức vụ này (rank / quyền).")
         if role == "leader":
             actor.sect_role = "member"
             target.sect_role = "leader"

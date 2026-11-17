@@ -15,6 +15,11 @@ from ktt112026.game.services.code_service import CodeService
 from ktt112026.game.services.daily_service import DailyService
 from ktt112026.game.services.quest_service import QuestService
 from ktt112026.game.services.sect_service import SectService
+from ktt112026.game.services.world_event_service import WorldEventService
+from ktt112026.game.services.pvp_service import PvpService
+from ktt112026.game.services.mission_service import MissionService
+from ktt112026.game.services.sect_tower_service import SectTowerService
+from ktt112026.game.services.combat_service import CombatService
 from ktt112026.game.repo.players import PlayerRepository
 from ktt112026.game.services.alchemy_service import AlchemyService
 from ktt112026.game.services.auction_service import AuctionService
@@ -79,6 +84,11 @@ class KTTBot(commands.Bot):
         self.daily = DailyService(repo)
         self.quests = QuestService(repo)
         self.sects = SectService(repo)
+        self.combat = CombatService(repo, self.stats)
+        self.world_events = WorldEventService(repo)
+        self.pvp = PvpService(repo, self.stats, self.combat)
+        self.missions = MissionService(repo)
+        self.sect_tower = SectTowerService(repo, self.stats, self.combat)
         self._commands_synced = False
 
     async def setup_hook(self) -> None:
@@ -112,6 +122,10 @@ class KTTBot(commands.Bot):
             self.daily,
             self.quests,
             self.sects,
+            self.world_events,
+            self.pvp,
+            self.missions,
+            self.sect_tower,
         )
         if self.settings.sync_commands_on_start and not self._commands_synced:
             try:

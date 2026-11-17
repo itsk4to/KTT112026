@@ -265,3 +265,48 @@ class PlayerService:
             "player": player,
             "message": f"Đột phá thất bại (tỷ lệ ~{rate*100:.0f}%). Mất {loss:,} Tu Vi.",
         }
+
+    def buy_stamina(self, user_id: str, packs: int = 1) -> dict:
+        """Mua hồi thể lực bằng Linh Thạch (GDD V.2) — giới hạn theo ngày."""
+        from datetime import date
+        packs = max(1, min(5, int(packs)))
+        player = self.get(str(user_id))
+        if player is None:
+            raise ValueError("Chưa có thể đạo.")
+        today = date.today().isoformat()
+        if getattr(player, "stamina_buy_day", "") != today:
+            player.stamina_buy_day = today
+            player.stamina_buys_today = 0
+        max_buys = 5
+        if player.stamina_buys_today + packs > max_buys:
+            left = max(0, max_buys - player.stamina_buys_today)
+            raise ValueError(f"Hôm nay chỉ mua thêm được {left} gói (tối đa {max_buys}/ngày).")
+        # cost scales with major: 80 * major per pack; pack = 25% max_stamina
+        unit_cost = 60 + player.major_realm * 40
+        cost = unit_cost * packs
+        if player.spirit_stones < cost:
+            raise ValueError(f"Không đủ Linh Thạch (cần {cost:,}).")
+        # ensure max_stamina tracks realm
+        from ktt112026.game.content.realms import STAMINA_BY_MAJOR
+        player.max_stamina = max(player.max_stamina, STAMINA_BY_MAJOR.get(player.major_realm, 100))
+        gain_each = max(15, player.max_stamina // 4)
+        gain = gain_each * packs
+        room = player.max_stamina - player.stamina
+        if room <= 0:
+            raise ValueError("Thể lực đã đầy.")
+        actual = min(gain, room)
+        # still charge full packs requested if any room
+        player.spirit_stones -= cost
+        player.stamina = min(player.max_stamina, player.stamina + actual)
+        player.stamina_buys_today += packs
+        self.repo.save(player)
+        return {
+            "cost": cost,
+            "gain": actual,
+            "packs": packs,
+            "stamina": player.stamina,
+            "max_stamina": player.max_stamina,
+            "buys_left": max_buys - player.stamina_buys_today,
+            "player": player,
+        }
+

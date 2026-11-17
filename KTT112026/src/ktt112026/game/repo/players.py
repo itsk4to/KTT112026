@@ -53,6 +53,8 @@ def _row_to_player(row: Any) -> Player:
         partner_id=str(g("partner_id") or ""),
         last_songtu_at=float(g("last_songtu_at") or 0),
         last_stamina_tick=float(g("last_stamina_tick") or 0),
+        stamina_buy_day=str(g("stamina_buy_day") or ""),
+        stamina_buys_today=int(g("stamina_buys_today") or 0),
         dokiep_extra_shield=int(g("dokiep_extra_shield") or 0),
         dokiep_remove_wrong=int(g("dokiep_remove_wrong") or 0),
         dokiep_fail_loss_pct=int(g("dokiep_fail_loss_pct") or 20),
@@ -93,8 +95,9 @@ class PlayerRepository:
                 cultivate_bonus_pct, cultivate_bonus_charges,
                 last_gather_day, gather_count_today, last_bicanh_at,
                 partner_id, last_songtu_at, last_stamina_tick,
+                stamina_buy_day, stamina_buys_today,
                 created_at, updated_at
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 player.user_id, player.display_name, player.major_realm, player.minor_stage,
                 player.path, player.faction, player.cultivation, player.spirit_stones,
@@ -106,6 +109,7 @@ class PlayerRepository:
                 player.cultivate_bonus_pct, player.cultivate_bonus_charges,
                 player.last_gather_day, player.gather_count_today, player.last_bicanh_at,
                 player.partner_id, player.last_songtu_at, player.last_stamina_tick,
+                player.stamina_buy_day, player.stamina_buys_today,
                 player.created_at, player.updated_at,
             ),
         )
@@ -126,6 +130,7 @@ class PlayerRepository:
                 cultivate_bonus_pct=?, cultivate_bonus_charges=?,
                 last_gather_day=?, gather_count_today=?, last_bicanh_at=?,
                 partner_id=?, last_songtu_at=?, last_stamina_tick=?,
+                stamina_buy_day=?, stamina_buys_today=?,
                 dokiep_extra_shield=?, dokiep_remove_wrong=?, dokiep_fail_loss_pct=?, dokiep_first_immune=?,
                 last_daily_day=?, daily_streak=?,
                 sect_id=?, sect_contrib=?, sect_joined_at=?, sect_role=?,
@@ -142,6 +147,7 @@ class PlayerRepository:
                 player.cultivate_bonus_pct, player.cultivate_bonus_charges,
                 player.last_gather_day, player.gather_count_today, player.last_bicanh_at,
                 player.partner_id, player.last_songtu_at, player.last_stamina_tick,
+                player.stamina_buy_day, player.stamina_buys_today,
                 player.dokiep_extra_shield, player.dokiep_remove_wrong,
                 player.dokiep_fail_loss_pct, player.dokiep_first_immune,
                 player.last_daily_day, player.daily_streak,

@@ -71,6 +71,10 @@ class GameCommands(commands.Cog):
         daily: DailyService,
         quests: QuestService,
         sects: SectService,
+        world_events,
+        pvp,
+        missions,
+        sect_tower,
     ) -> None:
         self.bot = bot
         self.players = players
@@ -93,6 +97,10 @@ class GameCommands(commands.Cog):
         self.daily = daily
         self.quests = quests
         self.sects = sects
+        self.world_events = world_events
+        self.pvp = pvp
+        self.missions = missions
+        self.sect_tower = sect_tower
 
     async def _img(self, ctx: commands.Context, png: bytes, name: str = "card.png", view=None) -> None:
         file = discord.File(BytesIO(png), filename=name)
@@ -402,6 +410,7 @@ class GameCommands(commands.Cog):
             except ValueError as exc:
                 await self._img(ctx, render_simple_result(title="Cống hiến thất bại", detail=str(exc), ok=False))
                 return
+            self.missions.bump(str(ctx.author.id), "sect_contrib", int(r["contrib"]), absolute=True)
             await self._img(
                 ctx,
                 render_simple_result(
@@ -581,10 +590,183 @@ class GameCommands(commands.Cog):
             ),
         )
 
+
+    @commands.command(name="tim", aliases=("tra", "timdo", "lookup"))
+    async def tim(self, ctx: commands.Context, *, query: str | None = None) -> None:
+        """`.tim <id|tên|loại>` — tra cứu vật phẩm trong catalog."""
+        if not query or not query.strip():
+            await ctx.reply("`.tim <id hoặc tên>` ví dụ `.tim tukhidan` · `.tim kiếm`", mention_author=False)
+            return
+        from ktt112026.game.content.item_search import format_item_brief, search_items
+        rows = search_items(query.strip(), limit=8)
+        if not rows:
+            await ctx.reply(f"Không thấy vật phẩm khớp `{query.strip()[:40]}`.", mention_author=False)
+            return
+        lines = [f"**Tra cứu:** `{query.strip()[:40]}` ({len(rows)} kết quả)"]
+        for it in rows:
+            lines.append(format_item_brief(it))
+        await ctx.reply("\n".join(lines)[:1900], mention_author=False)
+
+
+    @commands.command(name="sukien", aliases=("event", "worldevent"))
+    async def sukien(self, ctx: commands.Context, action: str | None = None) -> None:
+        """`.sukien` xem · `.sukien nhan` nhận thưởng ngày."""
+        act = (action or "xem").lower()
+        if act in ("nhan", "claim", "nhận"):
+            try:
+                r = self.world_events.claim(str(ctx.author.id))
+                self.missions.bump(str(ctx.author.id), "sukien", 1)
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Sự kiện", detail=str(exc), ok=False))
+                return
+            ev = r["event"]
+            detail = f"{ev['name']}: +{r['stones']} LS"
+            if r.get("cultivation"):
+                detail += f" · +{r['cultivation']} tu vi"
+            if r.get("stamina"):
+                detail += f" · +{r['stamina']} TL"
+            await self._img(ctx, render_simple_result(title="Nhận sự kiện thế giới", detail=detail[:150]))
+            return
+        cur = self.world_events.current()
+        ev = cur["event"]
+        await ctx.reply(
+            f"**Sự kiện hôm nay** (`{cur['day']}`)\n"
+            f"**{ev['name']}** — {ev['desc']}\n"
+            f"Thưởng: {ev.get('stones', 0)} LS"
+            + (f" · {ev.get('cultivation', 0)} tu vi" if ev.get("cultivation") else "")
+            + "\nNhận: `.sukien nhan`",
+            mention_author=False,
+        )
+
+    @commands.command(name="pvp", aliases=("thachdau", "duel"))
+    async def pvp_cmd(self, ctx: commands.Context, action: str | None = None, arg: str | None = None) -> None:
+        """`.pvp @user <cược>` · `.pvp chap` · `.pvp huy`"""
+        act = (action or "").lower()
+        def _target():
+            if ctx.message.mentions:
+                return str(ctx.message.mentions[0].id)
+            if arg and arg.strip().strip("<@!>").isdigit():
+                return arg.strip().strip("<@!>")
+            return None
+
+        if act in ("huy", "cancel"):
+            try:
+                r = self.pvp.cancel(str(ctx.author.id))
+            except ValueError as exc:
+                await ctx.reply(str(exc), mention_author=False)
+                return
+            await ctx.reply(f"Đã hủy thách — hoàn {r['wager']} LS cọc.", mention_author=False)
+            return
+        if act in ("chap", "accept", "nhan"):
+            try:
+                r = self.pvp.accept(str(ctx.author.id), arg)
+            except ValueError as exc:
+                await ctx.reply(str(exc), mention_author=False)
+                return
+            if r.get("draw"):
+                await ctx.reply("PvP hòa — hoàn cọc hai bên.\n" + " | ".join((r.get("log") or [])[-2:]), mention_author=False)
+                return
+            await ctx.reply(
+                f"PvP xong — **{r['winner_name']}** thắng +{r['pot']} LS.\n" + " | ".join((r.get("log") or [])[-2:]),
+                mention_author=False,
+            )
+            return
+        # challenge: .pvp @user 100 or .pvp 100 with mention
+        tid = _target()
+        # action might be mention if no subcommand
+        wager_s = arg
+        if tid is None and action and action.strip().strip("<@!>").isdigit():
+            tid = action.strip().strip("<@!>")
+        if ctx.message.mentions and not act.startswith("<@"):
+            # .pvp @user 100 → action is mention garbled; parse content
+            parts = ctx.message.content.split()
+            # find number
+            for part in parts[1:]:
+                if part.isdigit():
+                    wager_s = part
+                    break
+            tid = str(ctx.message.mentions[0].id)
+        if not tid or not wager_s:
+            await ctx.reply("`.pvp @user <cược>` · `.pvp chap` · `.pvp huy`", mention_author=False)
+            return
+        try:
+            r = self.pvp.challenge(str(ctx.author.id), tid, int(wager_s))
+        except ValueError as exc:
+            await ctx.reply(str(exc), mention_author=False)
+            return
+        await ctx.reply(
+            f"Đã thách <@{tid}> cược **{r['wager']}** LS (cọc đã giữ, hết hạn {r['expires_sec']}s).\n"
+            f"Đối phương: `.pvp chap` · Bạn: `.pvp huy`",
+            mention_author=False,
+        )
+
+
+    @commands.command(name="nvda", aliases=("nhiemvuda", "mission"))
+    async def nvda(self, ctx: commands.Context, action: str | None = None, mid: str | None = None) -> None:
+        """`.nvda` danh sách nhiệm vụ dài · `.nvda nhan [id]`"""
+        act = (action or "list").lower()
+        if act in ("nhan", "claim"):
+            try:
+                r = self.missions.claim(str(ctx.author.id), mid)
+            except ValueError as exc:
+                await ctx.reply(str(exc), mention_author=False)
+                return
+            await ctx.reply(
+                f"Nhận nhiệm vụ dài: {', '.join(r['names'])} · +{r['stones']} LS",
+                mention_author=False,
+            )
+            return
+        st = self.missions.status(str(ctx.author.id))
+        lines = ["**Nhiệm vụ dài hạn**"]
+        for m in st["missions"]:
+            lines.append(
+                f"{m['flag']} `{m['id']}` **{m['name']}** {m['progress']}/{m['need']} — {m['desc']} (+{m['stones']} LS)"
+            )
+        lines.append("Nhận: `.nvda nhan` hoặc `.nvda nhan <id>`")
+        await ctx.reply("\n".join(lines)[:1900], mention_author=False)
+
+    @commands.command(name="tongthap", aliases=("secttower", "tthap"))
+    async def tongthap(self, ctx: commands.Context) -> None:
+        """Tông Tháp — chỉ đệ tử tông, đóng góp kho tông."""
+        try:
+            run = self.sect_tower.start(str(ctx.author.id))
+            self.missions.bump(str(ctx.author.id), "thap", 1)
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Tông Tháp", detail=str(exc), ok=False))
+            return
+        log = " | ".join(run.last_log[-2:]) if run.last_log else run.risk
+        png = render_tower_card(
+            floor=run.floor, risk=run.risk, stones=run.bag_stones,
+            cult=run.bag_contrib, alive=run.alive, message=log[:180],
+        )
+        from ktt112026.game.discord.sect_tower_view import SectTowerView
+        view = SectTowerView(self.sect_tower, ctx.author.id) if run.alive else None
+        await self._img(ctx, png, "tongthap.png", view=view)
+
+
+    @commands.command(name="muatl", aliases=("hoitl", "buystamina"))
+    async def muatl(self, ctx: commands.Context, packs: int | None = 1) -> None:
+        """`.muatl [số_gói]` — mua thể lực bằng Linh Thạch (tối đa 5 gói/ngày)."""
+        try:
+            r = self.players.buy_stamina(str(ctx.author.id), int(packs or 1))
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Không mua được thể lực", detail=str(exc), ok=False))
+            return
+        await self._img(
+            ctx,
+            render_simple_result(
+                title="Mua thể lực",
+                detail=(
+                    f"+{r['gain']} TL · -{r['cost']:,} LS · "
+                    f"{r['stamina']}/{r['max_stamina']} · còn {r['buys_left']} gói hôm nay"
+                ),
+            ),
+        )
+
     @commands.command(name="help", aliases=("huongdan", "trogiup"))
     async def help_game(self, ctx: commands.Context) -> None:
         lines_help = [
-            "**Tân thủ:** `.taothe` → `.tu` / `.tu 5` / `.tu max` → đầy thanh thì `.dp` (Hậu Kỳ thì `.dokiep`) → `.me` `.shop` `.thap` `.bicanh`",
+            "**Kho:** `.tim`/`.tra` · **Tân thủ:** `.taothe` → `.tu` / `.tu 5` / `.tu max` → đầy thanh thì `.dp` (Hậu Kỳ thì `.dokiep`) → `.me` `.shop` `.thap` `.bicanh`",
             "**Đạo lộ:** `.chon tien|ma` · `.gianhap tongmon|tantu` · `.tongmon`",
             "**Đồ:** `.mua` `.dung <đan> [n]` `.hoc` `.tui` `.mac` · **Thú:** `.trieuhoi` `.mang`",
             "**Xã hội:** `.chuyen` `.ban` `.bxh` `.ketduyen` `.daolu` `.songtu` · **Mã:** `.code <mã>`",
@@ -643,13 +825,16 @@ class GameCommands(commands.Cog):
         try:
             run = self.tower.start(str(ctx.author.id))
             self.quests.bump(str(ctx.author.id), "thap", 1)
+            self.missions.bump(str(ctx.author.id), "thap", 1)
         except ValueError as exc:
             await self._img(ctx, render_simple_result(title="Không leo tháp được", detail=str(exc), ok=False))
             return
+        log = " | ".join(run.last_log[-2:]) if getattr(run, "last_log", None) else ""
+        msg = (log + " — Tiếp tục hoặc Rút lui.") if log else "Tầng đầu — chọn Tiếp tục hoặc Rút lui."
         png = render_tower_card(
             floor=run.floor, risk=run.risk, stones=run.bag_stones,
             cult=run.bag_cultivation, alive=run.alive,
-            message="Tầng đầu — chọn Tiếp tục hoặc Rút lui.",
+            message=msg[:180],
         )
         view = TowerView(self.tower, ctx.author.id) if run.alive else None
         await self._img(ctx, png, "thap.png", view=view)
@@ -1040,10 +1225,15 @@ async def setup_game(
     daily: DailyService,
     quests: QuestService,
     sects: SectService,
+    world_events,
+    pvp,
+    missions,
+    sect_tower,
 ) -> None:
     await bot.add_cog(
         GameCommands(
             bot, players, shop, dokiep, tower, inventory, items, techniques, stats,
             pets, exploration, gather, alchemy, economy, partners, leaderboard, auction, codes, daily, quests, sects,
+            world_events, pvp, missions, sect_tower,
         )
     )

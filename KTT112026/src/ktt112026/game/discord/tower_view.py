@@ -38,7 +38,9 @@ class TowerView(discord.ui.View):
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
-        png = self._card(run, "Tiến thêm một tầng." if run.alive else run.risk)
+        log = " | ".join(getattr(run, "last_log", [])[-2:])
+        msg = (log if log else "Tiến thêm một tầng.") if run.alive else run.risk
+        png = self._card(run, msg[:180])
         if not run.alive:
             for c in self.children:
                 if isinstance(c, discord.ui.Button):
