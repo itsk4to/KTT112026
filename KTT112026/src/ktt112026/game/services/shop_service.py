@@ -43,8 +43,12 @@ class ShopService:
         qty = max(1, min(99, int(qty)))
         found = find_item(item_id)
         if found is None:
-            raise ValueError("Không có vật phẩm này trong cửa hàng.")
+            raise ValueError("Không tìm thấy vật phẩm trong cửa hàng hệ thống. Kiểm tra mã (`.shop`) hoặc vật phẩm chỉ rơi từ bí cảnh/luyện đan.")
         _cat, item = found
+        if item.get("purchasable") is False or item.get("shop") is False:
+            raise ValueError(f"**{item.get('name', item_id)}** không thể mua — chỉ nhận từ rơi/đan/nhiệm vụ.")
+        if item.get("locked"):
+            raise ValueError("Vật phẩm đang khóa theo cảnh giới. Tu luyện thêm rồi hãy mua.")
         player = self.players.get(str(user_id))
         if player is None:
             raise ValueError("Chưa có thể đạo. Gõ `.taothe` trước.")

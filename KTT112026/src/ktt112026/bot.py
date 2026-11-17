@@ -14,6 +14,7 @@ from ktt112026.game.discord.commands import setup_game
 from ktt112026.game.services.code_service import CodeService
 from ktt112026.game.services.daily_service import DailyService
 from ktt112026.game.services.quest_service import QuestService
+from ktt112026.game.services.sect_service import SectService
 from ktt112026.game.repo.players import PlayerRepository
 from ktt112026.game.services.alchemy_service import AlchemyService
 from ktt112026.game.services.auction_service import AuctionService
@@ -42,7 +43,7 @@ class KTTBot(commands.Bot):
     def __init__(self, settings: Settings) -> None:
         intents = __import__("discord").Intents.default()
         intents.message_content = True
-        super().__init__(command_prefix=settings.command_prefix, intents=intents, help_command=None)
+        super().__init__(command_prefix=settings.command_prefix, intents=intents, help_command=None, case_insensitive=True)
         self.settings = settings
         self.music = MusicManager(max_queue=settings.max_music_queue)
         self.voice_presence = VoicePresenceService(
@@ -77,11 +78,18 @@ class KTTBot(commands.Bot):
         self.codes = CodeService(repo)
         self.daily = DailyService(repo)
         self.quests = QuestService(repo)
+        self.sects = SectService(repo)
         self._commands_synced = False
 
     async def setup_hook(self) -> None:
         await self.add_cog(VoiceCommands(self.music, self.settings))
         await setup_admin(self, self.codes, self.players, self.settings.admin_ids)
+        try:
+            wr = self.sects.process_weekly_rewards()
+            if wr.get("paid") and wr.get("winners"):
+                logger.info("Sect weekly rewards: %s", wr)
+        except Exception:
+            logger.exception("sect weekly rewards")
         await setup_game(
             self,
             self.players,
@@ -103,6 +111,7 @@ class KTTBot(commands.Bot):
             self.codes,
             self.daily,
             self.quests,
+            self.sects,
         )
         if self.settings.sync_commands_on_start and not self._commands_synced:
             try:

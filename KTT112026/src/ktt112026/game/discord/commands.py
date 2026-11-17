@@ -17,6 +17,8 @@ from ktt112026.game.services.auction_service import AuctionService
 from ktt112026.game.services.code_service import CodeService
 from ktt112026.game.services.daily_service import DailyService
 from ktt112026.game.services.quest_service import QuestService
+from ktt112026.game.services.sect_service import SectService
+from ktt112026.game.util.formatters import fmt_num, fmt_stones
 from ktt112026.game.services.economy_service import EconomyService
 from ktt112026.game.services.leaderboard_service import LeaderboardService
 from ktt112026.game.services.partner_service import PartnerService
@@ -28,6 +30,7 @@ from ktt112026.game.services.technique_service import TechniqueService
 from ktt112026.game.services.tower_service import TowerService
 from ktt112026.game.content.shop import resolve_category
 from ktt112026.game.render.cards import (
+    render_partner_card,
     render_bag_card,
     render_create_card,
     render_cultivate_card,
@@ -67,6 +70,7 @@ class GameCommands(commands.Cog):
         codes: CodeService,
         daily: DailyService,
         quests: QuestService,
+        sects: SectService,
     ) -> None:
         self.bot = bot
         self.players = players
@@ -88,6 +92,7 @@ class GameCommands(commands.Cog):
         self.codes = codes
         self.daily = daily
         self.quests = quests
+        self.sects = sects
 
     async def _img(self, ctx: commands.Context, png: bytes, name: str = "card.png", view=None) -> None:
         file = discord.File(BytesIO(png), filename=name)
@@ -256,6 +261,311 @@ class GameCommands(commands.Cog):
             render_simple_result(title="Nhận nhiệm vụ", detail=f"{names} · +{r['stones']:,} LS"),
         )
 
+
+    @commands.command(name="tongmon", aliases=("tong", "sect"))
+    async def tongmon(self, ctx: commands.Context, action: str | None = None, arg: str | None = None) -> None:
+        """
+        `.tongmon` — danh sách
+        `.tongmon vao|nhan|roi|moi|kick|chuc|gop|info|bxh|qua`
+        """
+        act = (action or "list").lower()
+
+        def _target_id() -> str | None:
+            if ctx.message.mentions:
+                return str(ctx.message.mentions[0].id)
+            if arg:
+                raw = arg.strip().strip("<@!>")
+                if raw.isdigit():
+                    return raw
+            return None
+
+        if act in ("list", "ds", "xem"):
+            rows = self.sects.list_sects()
+            lines = ["**Tông Môn** — `.gianhap tongmon` rồi `vao <id>` · Lập tông: `.tongmon tao <tên>`"]
+            for s in rows:
+                path = s.get("path", "any")
+                path_lbl = "Tiên" if path == "tien" else ("Ma" if path == "ma" else "Hỗn")
+                tag = "NPC" if s.get("npc", True) else "PC"
+                lines.append(
+                    f"`{s['id']}` **{s['name']}** [{tag}] Lv.{s['level']} {path_lbl} · "
+                    f"{s['members']}/{s['max_members']} · CH {fmt_num(s['contrib'])}"
+                )
+            lines.append(
+                "Lệnh: `vao` · `tao` · `nhan` · `moi @` · `kick @` · `chuc @` · "
+                "`gop` · `bxh` · `info` · `roi` — Quà top tuần tự động (đan/bảo khí)"
+            )
+            await ctx.reply("\n".join(lines), mention_author=False)
+            return
+
+        if act in ("vao", "join"):
+            if not arg:
+                await ctx.reply("`.tongmon vao <id>`", mention_author=False)
+                return
+            try:
+                r = self.sects.join(str(ctx.author.id), arg)
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Không vào được", detail=str(exc), ok=False))
+                return
+            role = "Tông Chủ" if r.get("role") == "leader" else "Đệ tử"
+            await self._img(
+                ctx,
+                render_simple_result(
+                    title="Gia nhập Tông Môn",
+                    detail=f"{r['sect']['name']} · {role} · Cấp tông {r.get('level', 1)}",
+                ),
+            )
+            return
+
+        if act in ("nhan", "accept", "nhanloi"):
+            try:
+                r = self.sects.join_via_invite(str(ctx.author.id), arg)
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Không nhận được", detail=str(exc), ok=False))
+                return
+            await self._img(
+                ctx,
+                render_simple_result(title="Đã nhận lời mời", detail=r["sect"]["name"][:80]),
+            )
+            return
+
+        if act in ("roi", "leave"):
+            try:
+                r = self.sects.leave(str(ctx.author.id))
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Không rời được", detail=str(exc), ok=False))
+                return
+            await self._img(
+                ctx,
+                render_simple_result(title="Đã rời tông", detail=str(r["old"].get("name", ""))[:80]),
+            )
+            return
+
+        if act in ("moi", "invite"):
+            tid = _target_id()
+            if not tid:
+                await ctx.reply("`.tongmon moi @người_chơi`", mention_author=False)
+                return
+            try:
+                r = self.sects.invite(str(ctx.author.id), tid)
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Mời thất bại", detail=str(exc), ok=False))
+                return
+            await ctx.reply(
+                f"Đã mời <@{tid}> vào **{r['sect']['name']}** "
+                f"(còn {r['expires_hours']}h — đối phương: `.tongmon nhan`).",
+                mention_author=False,
+            )
+            return
+
+        if act in ("kick", "duoi"):
+            tid = _target_id()
+            if not tid:
+                await ctx.reply("`.tongmon kick @người_chơi`", mention_author=False)
+                return
+            try:
+                r = self.sects.kick(str(ctx.author.id), tid)
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Kick thất bại", detail=str(exc), ok=False))
+                return
+            await ctx.reply(f"Đã mời rời tông: **{r['name']}**.", mention_author=False)
+            return
+
+        if act in ("chuc", "promote", "bonhiem"):
+            tid = _target_id()
+            role = "elder"
+            # arg may be role if mention used
+            if arg and not arg.startswith("<@"):
+                role = arg
+            # if two tokens: need parse from message
+            parts = ctx.message.content.split()
+            # .tongmon chuc @user elder
+            for i, part in enumerate(parts):
+                if part.lower() in ("elder", "member", "leader", "trưởng", "de_tu"):
+                    role = {"trưởng": "elder", "de_tu": "member"}.get(part.lower(), part.lower())
+            if not tid:
+                await ctx.reply("`.tongmon chuc @user elder|member|leader`", mention_author=False)
+                return
+            try:
+                r = self.sects.promote(str(ctx.author.id), tid, role)
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Bổ nhiệm thất bại", detail=str(exc), ok=False))
+                return
+            await ctx.reply(f"**{r['name']}** → `{r['role']}`", mention_author=False)
+            return
+
+        if act in ("gop", "donate", "cung"):
+            if not arg:
+                await ctx.reply("`.tongmon gop <số_linh_thạch>`", mention_author=False)
+                return
+            try:
+                r = self.sects.donate(str(ctx.author.id), int(arg))
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Cống hiến thất bại", detail=str(exc), ok=False))
+                return
+            await self._img(
+                ctx,
+                render_simple_result(
+                    title="Cống hiến Tông Môn",
+                    detail=(
+                        f"-{fmt_num(r['amount'])} LS · CH {fmt_num(r['contrib'])} · "
+                        f"Kho +{fmt_num(r['bank_add'])} · Cấp {r['level']}"
+                        + (" · **Lên Tông Chủ!**" if r.get("promoted") else "")
+                    ),
+                ),
+            )
+            return
+
+        if act in ("bxh", "rank", "xephang"):
+            try:
+                r = self.sects.ranking(str(ctx.author.id))
+            except ValueError as exc:
+                await ctx.reply(str(exc), mention_author=False)
+                return
+            lines = [
+                f"**BXH {r['sect'].get('name', '')}** · Cấp {r['level']} · "
+                f"{r['members']}/{r['max_members']} · CH {fmt_num(r['total'])}"
+            ]
+            medals = ["🥇", "🥈", "🥉"]
+            for e in r["entries"]:
+                med = medals[e["rank"] - 1] if e["rank"] <= 3 else f"`#{e['rank']}`"
+                lines.append(f"{med} **{e['name']}** ({e['role']}) — {e['contrib_fmt']}")
+            await ctx.reply("\n".join(lines), mention_author=False)
+            return
+
+        if act in ("info", "tt"):
+            try:
+                r = self.sects.info(str(ctx.author.id), arg)
+            except ValueError as exc:
+                await ctx.reply(str(exc), mention_author=False)
+                return
+            s = r["sect"]
+            nxt = r.get("next_level_at")
+            nxt_s = fmt_num(nxt) if nxt else "MAX"
+            lines = [
+                f"**{s['name']}** (`{s['id']}`) · Cấp **{r['level']}**",
+                s.get("desc", ""),
+                f"Tông Chủ: {r['leader_name']} · Thành viên {r['member_count']}/{r['max_members']}",
+                f"Cống hiến: {fmt_num(r['contrib_total'])} · Kho: {fmt_num(r['bank'])} LS · Mốc cấp sau: {nxt_s}",
+                "**Top cống hiến:**",
+            ]
+            for i, mrow in enumerate(r["members"][:5], 1):
+                role = mrow.get("sect_role") or "member"
+                rl = {"leader": "TC", "elder": "TL"}.get(role, "Đệ")
+                lines.append(f"{i}. [{rl}] {mrow['display_name']} — {fmt_num(int(mrow['sect_contrib']))}")
+            await ctx.reply("\n".join(lines), mention_author=False)
+            return
+
+        if act in ("tao", "create", "lap"):
+            # .tongmon tao Tên Tông
+            name = arg or ""
+            parts = ctx.message.content.split(None, 2)
+            if len(parts) >= 3:
+                name = parts[2].strip()
+            if not name:
+                await ctx.reply(
+                    f"`.tongmon tao <tên tông>` — phí 50k LS, cần cấp 3+, đã rời tông cũ.",
+                    mention_author=False,
+                )
+                return
+            try:
+                r = self.sects.create_sect(str(ctx.author.id), name)
+            except ValueError as exc:
+                await self._img(ctx, render_simple_result(title="Không lập được tông", detail=str(exc), ok=False))
+                return
+            await self._img(
+                ctx,
+                render_simple_result(
+                    title="Lập Tông Môn",
+                    detail=f"{r['sect']['name']} (`{r['sect']['id']}`) · -{fmt_num(r['cost'])} LS · Bạn là Tông Chủ",
+                ),
+            )
+            return
+
+        await ctx.reply(
+            "`.tongmon` · `vao` · `tao` · `nhan` · `moi @` · `kick @` · `chuc @` · "
+            "`gop` · `bxh` · `info` · `roi`",
+            mention_author=False,
+        )
+
+
+    @commands.command(name="daolu", aliases=("dao_lu", "partner"))
+    async def daolu(self, ctx: commands.Context) -> None:
+        p = self.players.get(str(ctx.author.id))
+        if p is None:
+            await ctx.reply("Chưa có thể đạo.", mention_author=False)
+            return
+        if not p.partner_id:
+            await self._img(
+                ctx,
+                render_simple_result(title="Chưa có Đạo Lữ", detail="Dùng `.ketduyen @user` khi đủ duyên.", ok=False),
+            )
+            return
+        partner = self.players.get(p.partner_id)
+        if partner is None:
+            await ctx.reply("Không tìm thấy đạo lữ (dữ liệu lệch).", mention_author=False)
+            return
+        import time
+        joined = min(float(p.created_at or 0) or time.time(), float(partner.created_at or 0) or time.time())
+        # Prefer last_songtu and partner link time from partner service if any
+        delta = max(0, time.time() - joined)
+        days = int(delta // 86400)
+        hours = int((delta % 86400) // 3600)
+        last = float(p.last_songtu_at or 0)
+        if last <= 0:
+            last_s = "Chưa song tu"
+        else:
+            ago = int(time.time() - last)
+            last_s = f"{ago // 3600} giờ trước" if ago >= 3600 else f"{ago // 60} phút trước"
+        png = render_partner_card(
+            name=p.display_name,
+            partner_name=partner.display_name,
+            days=days,
+            hours=hours,
+            major=partner.major_realm,
+            path=partner.path,
+            last_songtu=last_s,
+        )
+        await self._img(ctx, png, "daolu.png")
+
+    @commands.command(name="info", aliases=("xem", "profile"))
+    async def info_other(self, ctx: commands.Context, user: str | None = None) -> None:
+        """Xem thể đạo người khác: `.info @user`"""
+        target = None
+        if ctx.message.mentions:
+            target = ctx.message.mentions[0]
+        elif user:
+            # raw id
+            uid = user.strip().strip("<@!>")
+            if uid.isdigit():
+                target_id = uid
+            else:
+                await ctx.reply("Dùng `.info @tên` hoặc mention người chơi.", mention_author=False)
+                return
+            target = type("U", (), {"id": int(target_id), "display_name": uid})()
+        else:
+            await ctx.reply("`.info @user` để xem thể đạo người khác.", mention_author=False)
+            return
+        uid = str(target.id)
+        p = self.players.get(uid)
+        if p is None:
+            await self._img(ctx, render_simple_result(title="Không có thể đạo", detail="Người này chưa `.taothe`.", ok=False))
+            return
+        try:
+            eff = self.stats.effective(uid)
+            power = int(eff["power"])
+        except Exception:
+            power = 0
+            eff = None
+        gear = {}
+        pets = []
+        # names optional
+        png = render_profile_card(
+            p,
+            effective_stats=(eff or {}).get("stats"),
+            power=power,
+        )
+        await self._img(ctx, png, "info.png")
+
     @commands.command(name="diemdanh", aliases=("daily", "checkin"))
     async def diemdanh(self, ctx: commands.Context) -> None:
         try:
@@ -273,16 +583,15 @@ class GameCommands(commands.Cog):
 
     @commands.command(name="help", aliases=("huongdan", "trogiup"))
     async def help_game(self, ctx: commands.Context) -> None:
-        text = (
-            "**Tân thủ:** `.taothe` → `.tu` / `.tu 5` / `.tu max` → đầy thanh thì `.dp` "
-            "(Hậu Kỳ thì `.dokiep`) → `.me` `.shop` `.thap` `.bicanh`\n"
-            "**Đạo lộ:** `.chon tien|ma` · `.gianhap tongmon|tantu`\n"
-            "**Đồ:** `.mua` `.dung` `.hoc` `.tui` `.mac` · **Thú:** `.trieuhoi` `.mang`\n"
-            "**Xã hội:** `.chuyen` `.ban` `.bxh` `.ketduyen` `.songtu` · **Code:** `.code <ma>`\n"
-            "**Ngày:** `.diemdanh` `.nhiemvu` `.nhannv` · **Bí cảnh:** `.bicanh <id>`\n"
-            "Thể lực hồi offline (~2 phút/điểm). Chi tiết: xem `.me`"
-        )
-        await ctx.reply(text.replace("\\n", "\n"), mention_author=False)
+        lines_help = [
+            "**Tân thủ:** `.taothe` → `.tu` / `.tu 5` / `.tu max` → đầy thanh thì `.dp` (Hậu Kỳ thì `.dokiep`) → `.me` `.shop` `.thap` `.bicanh`",
+            "**Đạo lộ:** `.chon tien|ma` · `.gianhap tongmon|tantu` · `.tongmon`",
+            "**Đồ:** `.mua` `.dung <đan> [n]` `.hoc` `.tui` `.mac` · **Thú:** `.trieuhoi` `.mang`",
+            "**Xã hội:** `.chuyen` `.ban` `.bxh` `.ketduyen` `.daolu` `.songtu` · **Mã:** `.code <mã>`",
+            "**Ngày:** `.diemdanh` `.nhiemvu` `.nhannv` · **Xem người:** `.info @user`",
+            "Thể lực hồi ngoại tuyến (~2 phút/điểm). Lệnh không phân biệt hoa/thường.",
+        ]
+        await ctx.reply("\n".join(lines_help), mention_author=False)
 
     @commands.command(name="chon")
     async def chon(self, ctx: commands.Context, path: str | None = None) -> None:
@@ -307,8 +616,11 @@ class GameCommands(commands.Cog):
         except ValueError as exc:
             await self._img(ctx, render_simple_result(title="Không gia nhập được", detail=str(exc), ok=False))
             return
-        label = "Tông Môn" if p.faction == "tongmon" else "Tán Tu"
-        await self._img(ctx, render_simple_result(title="Gia nhập thế lực", detail=label))
+        if p.faction == "tongmon":
+            detail = "Đã chọn Tông Môn — `.tongmon` xem tông NPC rồi `.tongmon vao <id>`. Cống hiến đủ sẽ thành Tông Chủ."
+        else:
+            detail = "Đã chọn Tán Tu — tự do tu luyện, không vào tông NPC. Sau này vẫn có thể đổi hướng nếu thiết kế cho phép."
+        await self._img(ctx, render_simple_result(title="Chọn thế lực", detail=detail[:150]))
 
     @commands.command(name="dokiep")
     async def dokiep(self, ctx: commands.Context) -> None:
@@ -363,20 +675,25 @@ class GameCommands(commands.Cog):
         await self._img(ctx, render_simple_result(title="Đã trang bị", detail=name))
 
     @commands.command(name="dung")
-    async def dung(self, ctx: commands.Context, item_id: str | None = None) -> None:
+    async def dung(self, ctx: commands.Context, item_id: str | None = None, qty: str | None = None) -> None:
         if not item_id:
-            await ctx.reply("`.dung <ma_do>` — ví dụ `.dung tukhidan`", mention_author=False)
+            await ctx.reply("`.dung <mã_đan> [số_lượng]` — ví dụ `.dung linhdan 3`", mention_author=False)
             return
+        n = 1
+        if qty is not None:
+            try:
+                n = int(qty)
+            except ValueError:
+                await ctx.reply("Số lượng phải là số nguyên.", mention_author=False)
+                return
         try:
-            result = self.items.use(str(ctx.author.id), item_id)
+            r = self.items.use(str(ctx.author.id), item_id, n)
         except ValueError as exc:
             await self._img(ctx, render_simple_result(title="Không dùng được", detail=str(exc), ok=False))
             return
-        detail = " · ".join(result["messages"])[:120]
-        await self._img(
-            ctx,
-            render_simple_result(title=f"Đã dùng {result['item']['name']}", detail=detail or "OK"),
-        )
+        detail = " · ".join(r.get("messages") or [])[:150]
+        await self._img(ctx, render_simple_result(title=f"Dùng đan ×{r.get('qty', 1)}", detail=detail or "Xong"))
+
 
     @commands.command(name="hoc")
     async def hoc(self, ctx: commands.Context, technique_id: str | None = None) -> None:
@@ -554,11 +871,27 @@ class GameCommands(commands.Cog):
         detail = f"{r['name']} x{r['qty']} → +{r['total']:,} LS | Túi còn {r['stones']:,} LS"
         await self._img(ctx, render_simple_result(title="Bán NPC", detail=detail))
 
-    @commands.command(name="bxh")
-    async def bxh(self, ctx: commands.Context, kind: str = "tuvi") -> None:
-        data = self.leaderboard.top(kind, 10)
-        detail = " · ".join(data["lines"][:10]) if data["lines"] else "Chưa có dữ liệu"
-        await self._img(ctx, render_simple_result(title=data["title"], detail=detail[:150]))
+    @commands.command(name="bxh", aliases=("bangxephang", "top"))
+    async def bxh(self, ctx: commands.Context, kind: str | None = None) -> None:
+        """`.bxh` · `.bxh linhthach|canhgioi|tongmon|cunghien`"""
+        data = self.leaderboard.top(kind or "lucchien", 10)
+        if data["kind"] == "tongmon":
+            from ktt112026.game.content.loader import load_sects
+            names = {s["id"]: s["name"] for s in load_sects()}
+            for e in data["entries"]:
+                e["name"] = names.get(e["name"], e["name"])
+        if not data["entries"]:
+            await ctx.reply("Chưa có dữ liệu bảng xếp hạng.", mention_author=False)
+            return
+        lines = [f"**{data['title']}**"]
+        medals = ["🥇", "🥈", "🥉"]
+        for e in data["entries"]:
+            med = medals[e["rank"] - 1] if e["rank"] <= 3 else f"`#{e['rank']}`"
+            extra = f" · {e['realm']}" if e.get("realm") else ""
+            lines.append(f"{med} **{e['name']}** — {e['score_fmt']} {data['score_label']}{extra}")
+        lines.append("_Loại: lucchien · linhthach · canhgioi · tongmon · cunghien_")
+        await ctx.reply("\n".join(lines), mention_author=False)
+
 
     @commands.command(name="ketduyen")
     async def ketduyen(self, ctx: commands.Context, member: discord.Member | None = None) -> None:
@@ -706,10 +1039,11 @@ async def setup_game(
     codes: CodeService,
     daily: DailyService,
     quests: QuestService,
+    sects: SectService,
 ) -> None:
     await bot.add_cog(
         GameCommands(
             bot, players, shop, dokiep, tower, inventory, items, techniques, stats,
-            pets, exploration, gather, alchemy, economy, partners, leaderboard, auction, codes, daily, quests,
+            pets, exploration, gather, alchemy, economy, partners, leaderboard, auction, codes, daily, quests, sects,
         )
     )

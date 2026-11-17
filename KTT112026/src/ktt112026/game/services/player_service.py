@@ -117,21 +117,21 @@ class PlayerService:
 
     def choose_faction(self, user_id: str, faction: str) -> Player:
         faction = faction.strip().lower()
-        if faction in ("tongmon", "tông", "tong", "mon"):
+        if faction in ("tongmon", "tông", "tong", "mon", "tong_mon"):
             faction = "tongmon"
-        elif faction in ("tantu", "tán", "tan", "tu"):
+        elif faction in ("tantu", "tán", "tan", "tu", "tan_tu"):
             faction = "tantu"
         else:
-            raise ValueError("Dùng `.gianhap tongmon` hoặc `.gianhap tantu`.")
+            raise ValueError("Đủ cảnh giới cấp 2+: `.gianhap tongmon` (vào tông NPC) hoặc `.gianhap tantu` (tự tu).")
         p = self.get(str(user_id))
         if p is None:
             raise ValueError("Chưa có thể đạo. Gõ `.taothe`.")
         if not p.path:
-            raise ValueError("Hãy `.chon tien/ma` trước.")
+            raise ValueError("Hãy `.chon tien` hoặc `.chon ma` trước.")
         if p.major_realm < 2:
-            raise ValueError("Cần Cấp 2 (sau Độ Kiếp) mới gia nhập thế lực.")
+            raise ValueError("Cần đại cảnh giới cấp 2 (sau Độ Kiếp Luyện Khí/Dẫn Khí) mới chọn Tán Tu hoặc Tông Môn.")
         if p.faction:
-            raise ValueError("Đã gia nhập thế lực.")
+            raise ValueError("Đã chọn thế lực rồi.")
         p.faction = faction
         self.repo.save(p)
         return p
