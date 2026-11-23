@@ -8,7 +8,7 @@ on:
         description: "Tên ZIP update trong repo File-Update"
         required: true
         type: string
-        default: "KTT112026_V1.7.0.zip"
+        default: "KTT112026_V1.7.1.zip"
 
 permissions:
   contents: write
