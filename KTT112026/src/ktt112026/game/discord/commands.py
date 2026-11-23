@@ -1195,8 +1195,10 @@ class GameCommands(commands.Cog):
             return
         try:
             result = self.shop.buy(str(ctx.author.id), item_id, qty)
-        except ValueError as exc:
-            await self._img(ctx, render_shop_buy_result(ok=False, title="Không mua được", detail=str(exc)))
+        except Exception as exc:
+            # Catch ValueError and unexpected errors so user always gets feedback
+            msg = str(exc) or type(exc).__name__
+            await self._img(ctx, render_shop_buy_result(ok=False, title="Không mua được", detail=msg[:180]))
             return
         it = result["item"]
         detail = f"{it['name']} x{result['qty']} | -{result['spent']:,} LS | Còn {result['stones_left']:,} LS"

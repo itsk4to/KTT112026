@@ -64,3 +64,10 @@ class ShopService:
         self.players.save(player)
         self.players.inventory_add(str(user_id), item["id"], qty)
         return {"item": item, "qty": qty, "spent": total, "stones_left": player.spirit_stones}
+
+
+    def _price_for(self, player, base_price: int) -> int:
+        """Scale price lightly by major realm (8% per major above 1)."""
+        major = max(1, int(getattr(player, "major_realm", 1) or 1))
+        mult = 1.0 + max(0, major - 1) * 0.08
+        return max(1, int(base_price * mult))

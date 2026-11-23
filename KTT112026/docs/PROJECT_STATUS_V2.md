@@ -1,7 +1,7 @@
 # Kato Tu Tiên (Đạo Lộ Tu Tiên) — Trạng thái dự án & Lộ trình
 
 **Mã nguồn:** KTT112026  
-**Phiên bản code:** **v1.7.0**  
+**Phiên bản code:** **v1.7.1**  
 **Đối chiếu:** GDD V2 (*Dự Án Kato Tu Tiên V2*)  
 **Cập nhật:** 2026-11-17  
 

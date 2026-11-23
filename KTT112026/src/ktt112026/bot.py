@@ -91,6 +91,21 @@ class KTTBot(commands.Bot):
         self.sect_tower = SectTowerService(repo, self.stats, self.combat)
         self._commands_synced = False
 
+
+    async def on_command_error(self, ctx, error):
+        """Always reply on command errors so users see feedback."""
+        import traceback
+        logger.exception("Command error: %s", error)
+        # Ignore unknown command / check failures that are intentional
+        from discord.ext.commands import CommandNotFound, CheckFailure
+        if isinstance(error, (CommandNotFound, CheckFailure)):
+            return
+        msg = str(error) or type(error).__name__
+        try:
+            await ctx.reply(f"Lỗi lệnh: {msg[:200]}", mention_author=False)
+        except Exception:
+            pass
+
     async def setup_hook(self) -> None:
         await self.add_cog(VoiceCommands(self.music, self.settings))
         await setup_admin(self, self.codes, self.players, self.settings.admin_ids)
