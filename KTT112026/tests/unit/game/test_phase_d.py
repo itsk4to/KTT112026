@@ -4,8 +4,8 @@ from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
 from ktt112026.game.render.cards import render_profile_card
 from ktt112026.game.repo.players import PlayerRepository
-from ktt112026.game.services.player_service import PlayerService
-from ktt112026.game.services.shop_service import ShopService
+from ktt112026.game.services.player.player_service import PlayerService
+from ktt112026.game.services.economy.shop_service import ShopService
 
 
 def test_shop_hides_far_realm_and_wrong_path():

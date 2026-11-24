@@ -91,6 +91,7 @@ src/ktt112026/game/services/economy/economy_service.py
 src/ktt112026/game/services/economy/inventory_service.py
 src/ktt112026/game/services/economy/item_use_service.py
 src/ktt112026/game/services/economy/shop_service.py
+src/ktt112026/game/services/economy/taixiu_service.py
 src/ktt112026/game/services/player/__init__.py
 src/ktt112026/game/services/player/dokiep_service.py
 src/ktt112026/game/services/player/player_service.py

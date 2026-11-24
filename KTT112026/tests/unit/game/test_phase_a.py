@@ -3,10 +3,10 @@ import random
 from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
 from ktt112026.game.repo.players import PlayerRepository
-from ktt112026.game.services.item_use_service import ItemUseService
-from ktt112026.game.services.player_service import PlayerService
-from ktt112026.game.services.stats_service import StatsService
-from ktt112026.game.services.technique_service import TechniqueService
+from ktt112026.game.services.economy.item_use_service import ItemUseService
+from ktt112026.game.services.player.player_service import PlayerService
+from ktt112026.game.services.player.stats_service import StatsService
+from ktt112026.game.services.player.technique_service import TechniqueService
 
 
 def _env():

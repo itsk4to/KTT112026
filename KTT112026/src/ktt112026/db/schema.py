@@ -1,7 +1,7 @@
 """Schema v7 — partner / songtu."""
 from __future__ import annotations
 
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 20
 
 DDL = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -208,6 +208,28 @@ CREATE TABLE IF NOT EXISTS owned_pets (
     pet_id TEXT NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity >= 0),
     PRIMARY KEY(user_id, pet_id)
+);
+
+CREATE TABLE IF NOT EXISTS taixiu_rounds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open', -- open | closed
+    created_at REAL NOT NULL,
+    closes_at REAL NOT NULL,
+    roll INTEGER,
+    winner TEXT,
+    total_tai INTEGER NOT NULL DEFAULT 0,
+    total_xiu INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS taixiu_bets (
+    round_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    side TEXT NOT NULL, -- tai | xiu
+    amount INTEGER NOT NULL,
+    payout INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY(round_id, user_id),
+    FOREIGN KEY(round_id) REFERENCES taixiu_rounds(id)
 );
 """
 

@@ -5,7 +5,7 @@ from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
 from ktt112026.game.content.realms import stage_requirement
 from ktt112026.game.repo.players import PlayerRepository
-from ktt112026.game.services.player_service import PlayerService
+from ktt112026.game.services.player.player_service import PlayerService
 
 
 def _svc():

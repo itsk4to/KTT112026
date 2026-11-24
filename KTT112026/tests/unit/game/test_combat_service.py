@@ -3,9 +3,9 @@ import random
 from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
 from ktt112026.game.repo.players import PlayerRepository
-from ktt112026.game.services.combat_service import CombatService, monster_for_tower_floor
-from ktt112026.game.services.player_service import PlayerService
-from ktt112026.game.services.tower_service import TowerService
+from ktt112026.game.services.combat.combat_service import CombatService, monster_for_tower_floor
+from ktt112026.game.services.player.player_service import PlayerService
+from ktt112026.game.services.combat.tower_service import TowerService
 
 
 def test_pve_and_tower_floor_combat():

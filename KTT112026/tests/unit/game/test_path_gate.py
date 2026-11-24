@@ -4,8 +4,8 @@ from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
 from ktt112026.game.content.realms import stage_requirement
 from ktt112026.game.repo.players import PlayerRepository
-from ktt112026.game.services.dokiep_service import DokiepService
-from ktt112026.game.services.player_service import PlayerService
+from ktt112026.game.services.player.dokiep_service import DokiepService
+from ktt112026.game.services.player.player_service import PlayerService
 
 
 def test_dp_requires_path_for_hau():

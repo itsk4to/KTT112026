@@ -18,6 +18,7 @@ from ktt112026.game.services.social.sect_service import SectService
 from ktt112026.game.services.world.world_event_service import WorldEventService
 from ktt112026.game.services.combat.pvp_service import PvpService
 from ktt112026.game.services.economy.bet_service import BetService
+from ktt112026.game.services.economy.taixiu_service import TaiXiuService
 from ktt112026.game.services.social.leader_service import LeaderService
 from ktt112026.game.services.world.mission_service import MissionService
 from ktt112026.game.services.combat.sect_tower_service import SectTowerService
@@ -88,6 +89,7 @@ class KTTBot(commands.Bot):
         self.world_events = WorldEventService(repo)
         self.pvp = PvpService(repo, self.stats, self.combat)
         self.bet = BetService(repo)
+        self.taixiu = TaiXiuService(repo)
         self.leaders = LeaderService(repo)
         self.missions = MissionService(repo)
         self.sect_tower = SectTowerService(repo, self.stats, self.combat)
@@ -147,6 +149,7 @@ class KTTBot(commands.Bot):
             self.world_events,
             self.pvp,
             self.bet,
+            self.taixiu,
             self.leaders,
             self.missions,
             self.sect_tower,

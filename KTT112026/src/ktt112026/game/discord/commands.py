@@ -42,6 +42,7 @@ from ktt112026.game.render.cards import (
 from ktt112026.game.discord.dokiep_view import DokiepView
 from ktt112026.game.discord.shop_view import ShopView
 from ktt112026.game.discord.tower_view import TowerView
+from ktt112026.game.content.realms import realm_display
 
 logger = logging.getLogger("ktt.game.commands")
 
@@ -72,6 +73,7 @@ class GameCommands(commands.Cog):
         world_events,
         pvp,
         bet,
+        taixiu,
         leaders,
         missions,
         sect_tower,
@@ -99,6 +101,7 @@ class GameCommands(commands.Cog):
         self.world_events = world_events
         self.pvp = pvp
         self.bet = bet
+        self.taixiu = taixiu
         self.leaders = leaders
         self.missions = missions
         self.sect_tower = sect_tower
@@ -783,6 +786,112 @@ class GameCommands(commands.Cog):
         )
         await self._img(ctx, render_simple_result(title="Cá cược", detail=detail, ok=r["win"]))
 
+    @commands.command(name="taixiu", aliases=("tx",))
+    async def taixiu(self, ctx: commands.Context, amount: str | None = None, side: str | None = None) -> None:
+        """`.taixiu` xem bàn · `.taixiu <số> tai|xiu` đặt · `.taixiu dong` đóng và roll."""
+        guild_id = str(ctx.guild.id) if ctx.guild else "dm"
+        user_id = str(ctx.author.id)
+
+        if amount is None:
+            st = self.taixiu.status(guild_id)
+            left = st["time_left"]
+            lines = [
+                f"**Bàn Tài Xỉu** · Còn {left}s",
+                f"Tài: {st['total_tai']:,} LS · Xỉu: {st['total_xiu']:,} LS · {st['count']} người",
+            ]
+            if st["bets"]:
+                lines.append("Cược hiện tại:")
+                for b in st["bets"][:8]:
+                    name = b["user_id"]
+                    try:
+                        member = ctx.guild.get_member(int(b["user_id"])) if ctx.guild else None
+                        if member:
+                            name = member.display_name
+                    except Exception:
+                        pass
+                    lines.append(f"• {name}: {b['amount']:,} {b['side'].upper()}")
+            lines.append("Đặt: `.taixiu 500 tai` · Đóng: `.taixiu dong`")
+            await self._img(ctx, render_simple_result(title="Tài Xỉu", detail="\n".join(lines), ok=True))
+            return
+
+        if amount.lower() in ("dong", "close", "ket"):
+            try:
+                res = self.taixiu.close_and_roll(guild_id)
+            except ValueError as exc:
+                await ctx.reply(str(exc), mention_author=False)
+                return
+            winner = "Tài" if res["winner"] == "tai" else "Xỉu"
+            lines = [f"Xúc xắc: **{res['roll']}** → **{winner}**"]
+            for r in res["results"][:10]:
+                icon = "Thắng" if r["win"] else "Thua"
+                lines.append(f"• <@{r['user_id']}> {icon} {r['net']:+,} LS")
+            await self._img(ctx, render_simple_result(title="Kết quả Tài Xỉu", detail="\n".join(lines), ok=True))
+            return
+
+        try:
+            amt = int(amount)
+        except ValueError:
+            await ctx.reply("Số tiền không hợp lệ. `.taixiu 500 tai`", mention_author=False)
+            return
+        if not side:
+            await ctx.reply("Chọn mặt: `.taixiu 500 tai` hoặc `.taixiu 500 xiu`", mention_author=False)
+            return
+        try:
+            st = self.taixiu.place_bet(guild_id, user_id, amt, side)
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Không đặt được", detail=str(exc), ok=False))
+            return
+        await ctx.reply(f"Đã đặt **{amt:,}** LS vào **{side.upper()}**. Còn {st['time_left']}s.", mention_author=False)
+
+    @commands.command(name="thongke", aliases=("tk", "stats", "thong_ke"))
+    async def thongke(self, ctx: commands.Context, user: str | None = None) -> None:
+        """Thống kê cá nhân. `.thongke` hoặc `.thongke @user`."""
+        target = ctx.author
+        if user:
+            try:
+                target = await commands.MemberConverter().convert(ctx, user)
+            except Exception:
+                await ctx.reply("Không tìm thấy người chơi.", mention_author=False)
+                return
+        uid = str(target.id)
+        player = self.players.get(uid)
+        if player is None:
+            await ctx.reply("Chưa tạo thể đạo.", mention_author=False)
+            return
+        try:
+            eff = self.stats.effective(uid)
+            power = eff["power"]
+            stats = eff["stats"]
+        except Exception:
+            power = 0
+            stats = player.stats.as_dict()
+
+        realm = realm_display(player.major_realm, player.minor_stage, player.path)
+        path_label = {"tien": "Tiên", "ma": "Ma", "": "Chưa chọn"}.get(player.path, player.path)
+        faction_label = {"tongmon": "Tông môn", "tantu": "Tán tu", "": "Chưa"}.get(player.faction, player.faction)
+        root = f"{player.root_system.title()} · {player.root_quality.title()}"
+
+        lines = [
+            f"**{player.display_name}**",
+            f"Cảnh giới: {realm}",
+            f"Đạo: {path_label} · {faction_label}",
+            f"Tu vi: {player.cultivation:,}",
+            f"Linh Thạch: {player.spirit_stones:,}",
+            f"Thể lực: {player.stamina}/{player.max_stamina}",
+            f"Lực chiến: {power:,}",
+            f"Căn cốt: {stats.get('can_cot', 0)} · Ngộ tính: {stats.get('ngo_tinh', 0)}",
+            f"Thần thức: {stats.get('than_thuc', 0)} · Thân pháp: {stats.get('than_phap', 0)} · Khí vận: {stats.get('khi_van', 0)}",
+            f"Linh căn: {root}",
+            f"Chuỗi ngày: {player.daily_streak}",
+        ]
+        if player.sect_id:
+            lines.append(f"Tông: {player.sect_role or 'member'} · Cống hiến: {player.sect_contrib:,}")
+        if player.partner_id:
+            lines.append("Đã có đạo lữ")
+        if player.tower_runs_today:
+            lines.append(f"Tháp hôm nay: {player.tower_runs_today} lần")
+
+        await self._img(ctx, render_simple_result(title="Thống kê cá nhân", detail="\n".join(lines), ok=True))
 
     @commands.command(name="leader", aliases=("leaders", "topserver"))
     async def leader(self, ctx: commands.Context) -> None:
@@ -1259,6 +1368,7 @@ async def setup_game(
     world_events,
     pvp,
     bet,
+    taixiu,
     leaders,
     missions,
     sect_tower,
@@ -1267,6 +1377,6 @@ async def setup_game(
         GameCommands(
             bot, players, shop, dokiep, tower, inventory, items, techniques, stats,
             pets, gather, alchemy, economy, partners, leaderboard, auction, codes, daily, quests, sects,
-            world_events, pvp, bet, leaders, missions, sect_tower,
+            world_events, pvp, bet, taixiu, leaders, missions, sect_tower,
         )
     )

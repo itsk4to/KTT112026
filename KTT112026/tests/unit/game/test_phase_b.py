@@ -3,11 +3,11 @@ import random
 from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
 from ktt112026.game.repo.players import PlayerRepository
-from ktt112026.game.services.alchemy_service import AlchemyService
-from ktt112026.game.services.exploration_service import ExplorationService
-from ktt112026.game.services.gather_service import GatherService
-from ktt112026.game.services.pet_service import PetService
-from ktt112026.game.services.player_service import PlayerService
+from ktt112026.game.services.world.alchemy_service import AlchemyService
+from ktt112026.game.services.world.exploration_service import ExplorationService
+from ktt112026.game.services.world.gather_service import GatherService
+from ktt112026.game.services.world.pet_service import PetService
+from ktt112026.game.services.player.player_service import PlayerService
 
 
 def _repo():

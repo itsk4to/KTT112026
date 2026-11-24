@@ -3,8 +3,8 @@ import random
 from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
 from ktt112026.game.repo.players import PlayerRepository
-from ktt112026.game.services.player_service import PlayerService
-from ktt112026.game.services.quest_service import QuestService
+from ktt112026.game.services.player.player_service import PlayerService
+from ktt112026.game.services.world.quest_service import QuestService
 
 
 def test_quest_progress_and_claim():
