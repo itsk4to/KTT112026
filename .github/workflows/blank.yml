@@ -1,4 +1,3 @@
-
 name: KTT112026 - ZIP Update
 
 on:
@@ -36,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ ! "$ZIP_NAME" =~ ^KTT112026_V[0-9]+\.[0-9]+\.[0-9]+\.zip$ ]]; then
+          if [[ ! "\( ZIP_NAME" =\~ ^KTT112026_V[0-9]+\.[0-9]+\.[0-9]+\.zip \) ]]; then
             echo "::error::Invalid ZIP filename: $ZIP_NAME"
             exit 1
           fi
