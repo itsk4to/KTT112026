@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ ! "\( ZIP_NAME" =\~ ^KTT112026_V[0-9]+\.[0-9]+\.[0-9]+\.zip \) ]]; then
+          if ! [[ "\( ZIP_NAME" =\~ ^KTT112026_V[0-9]+\.[0-9]+\.[0-9]+\.zip \) ]]; then
             echo "::error::Invalid ZIP filename: $ZIP_NAME"
             exit 1
           fi
@@ -159,7 +159,6 @@ jobs:
                       with destination.open("wb") as target:
                           shutil.copyfileobj(source, target)
 
-          # Remove a single wrapper directory if present.
           children = list(temp_dir.iterdir())
 
           if (
@@ -308,7 +307,6 @@ jobs:
             exit 1
           fi
 
-          # Whitespace errors are warnings, not blockers.
           if ! git diff --cached --check; then
             echo "::warning::Whitespace issues detected. Continuing update."
           fi
