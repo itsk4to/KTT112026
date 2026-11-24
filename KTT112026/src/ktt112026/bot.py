@@ -11,32 +11,33 @@ from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
 from ktt112026.game.discord.admin_commands import setup_admin
 from ktt112026.game.discord.commands import setup_game
-from ktt112026.game.services.code_service import CodeService
-from ktt112026.game.services.daily_service import DailyService
-from ktt112026.game.services.quest_service import QuestService
-from ktt112026.game.services.sect_service import SectService
-from ktt112026.game.services.world_event_service import WorldEventService
-from ktt112026.game.services.pvp_service import PvpService
-from ktt112026.game.services.mission_service import MissionService
-from ktt112026.game.services.sect_tower_service import SectTowerService
-from ktt112026.game.services.combat_service import CombatService
+from ktt112026.game.services.economy.code_service import CodeService
+from ktt112026.game.services.world.daily_service import DailyService
+from ktt112026.game.services.world.quest_service import QuestService
+from ktt112026.game.services.social.sect_service import SectService
+from ktt112026.game.services.world.world_event_service import WorldEventService
+from ktt112026.game.services.combat.pvp_service import PvpService
+from ktt112026.game.services.economy.bet_service import BetService
+from ktt112026.game.services.social.leader_service import LeaderService
+from ktt112026.game.services.world.mission_service import MissionService
+from ktt112026.game.services.combat.sect_tower_service import SectTowerService
+from ktt112026.game.services.combat.combat_service import CombatService
 from ktt112026.game.repo.players import PlayerRepository
-from ktt112026.game.services.alchemy_service import AlchemyService
-from ktt112026.game.services.auction_service import AuctionService
-from ktt112026.game.services.economy_service import EconomyService
-from ktt112026.game.services.leaderboard_service import LeaderboardService
-from ktt112026.game.services.partner_service import PartnerService
-from ktt112026.game.services.dokiep_service import DokiepService
-from ktt112026.game.services.exploration_service import ExplorationService
-from ktt112026.game.services.gather_service import GatherService
-from ktt112026.game.services.inventory_service import InventoryService
-from ktt112026.game.services.item_use_service import ItemUseService
-from ktt112026.game.services.pet_service import PetService
-from ktt112026.game.services.player_service import PlayerService
-from ktt112026.game.services.shop_service import ShopService
-from ktt112026.game.services.stats_service import StatsService
-from ktt112026.game.services.technique_service import TechniqueService
-from ktt112026.game.services.tower_service import TowerService
+from ktt112026.game.services.world.alchemy_service import AlchemyService
+from ktt112026.game.services.economy.auction_service import AuctionService
+from ktt112026.game.services.economy.economy_service import EconomyService
+from ktt112026.game.services.social.leaderboard_service import LeaderboardService
+from ktt112026.game.services.social.partner_service import PartnerService
+from ktt112026.game.services.player.dokiep_service import DokiepService
+from ktt112026.game.services.world.gather_service import GatherService
+from ktt112026.game.services.economy.inventory_service import InventoryService
+from ktt112026.game.services.economy.item_use_service import ItemUseService
+from ktt112026.game.services.world.pet_service import PetService
+from ktt112026.game.services.player.player_service import PlayerService
+from ktt112026.game.services.economy.shop_service import ShopService
+from ktt112026.game.services.player.stats_service import StatsService
+from ktt112026.game.services.player.technique_service import TechniqueService
+from ktt112026.game.services.combat.tower_service import TowerService
 from ktt112026.voice.commands import VoiceCommands
 from ktt112026.voice.music.manager import MusicManager
 from ktt112026.voice.presence import VoicePresenceService
@@ -73,7 +74,6 @@ class KTTBot(commands.Bot):
         self.items = ItemUseService(repo)
         self.techniques = TechniqueService(repo)
         self.pets = PetService(repo)
-        self.exploration = ExplorationService(repo)
         self.gather = GatherService(repo)
         self.alchemy = AlchemyService(repo)
         self.auction = AuctionService(repo)
@@ -87,6 +87,8 @@ class KTTBot(commands.Bot):
         self.combat = CombatService(repo, self.stats)
         self.world_events = WorldEventService(repo)
         self.pvp = PvpService(repo, self.stats, self.combat)
+        self.bet = BetService(repo)
+        self.leaders = LeaderService(repo)
         self.missions = MissionService(repo)
         self.sect_tower = SectTowerService(repo, self.stats, self.combat)
         self._commands_synced = False
@@ -111,6 +113,12 @@ class KTTBot(commands.Bot):
         await setup_admin(self, self.codes, self.players, self.settings.admin_ids)
         try:
             wr = self.sects.process_weekly_rewards()
+            try:
+                lr = self.leaders.process_weekly()
+                if lr.get("paid"):
+                    logger.info("Global leader weekly: %s", lr)
+            except Exception:
+                logger.exception("leader weekly")
             if wr.get("paid") and wr.get("winners"):
                 logger.info("Sect weekly rewards: %s", wr)
         except Exception:
@@ -126,7 +134,6 @@ class KTTBot(commands.Bot):
             self.techniques,
             self.stats,
             self.pets,
-            self.exploration,
             self.gather,
             self.alchemy,
             self.economy,
@@ -139,6 +146,8 @@ class KTTBot(commands.Bot):
             self.sects,
             self.world_events,
             self.pvp,
+            self.bet,
+            self.leaders,
             self.missions,
             self.sect_tower,
         )

@@ -7,23 +7,22 @@ from io import BytesIO
 import discord
 from discord.ext import commands
 
-from ktt112026.game.services.dokiep_service import DokiepService
-from ktt112026.game.services.inventory_service import InventoryService
-from ktt112026.game.services.item_use_service import ItemUseService
-from ktt112026.game.services.player_service import PlayerService
-from ktt112026.game.services.shop_service import ShopService
-from ktt112026.game.services.alchemy_service import AlchemyService
-from ktt112026.game.services.auction_service import AuctionService
-from ktt112026.game.services.code_service import CodeService
-from ktt112026.game.services.daily_service import DailyService
-from ktt112026.game.services.quest_service import QuestService
-from ktt112026.game.services.sect_service import SectService
+from ktt112026.game.services.player.dokiep_service import DokiepService
+from ktt112026.game.services.economy.inventory_service import InventoryService
+from ktt112026.game.services.economy.item_use_service import ItemUseService
+from ktt112026.game.services.player.player_service import PlayerService
+from ktt112026.game.services.economy.shop_service import ShopService
+from ktt112026.game.services.world.alchemy_service import AlchemyService
+from ktt112026.game.services.economy.auction_service import AuctionService
+from ktt112026.game.services.economy.code_service import CodeService
+from ktt112026.game.services.world.daily_service import DailyService
+from ktt112026.game.services.world.quest_service import QuestService
+from ktt112026.game.services.social.sect_service import SectService
 from ktt112026.game.util.formatters import fmt_num, fmt_stones
-from ktt112026.game.services.economy_service import EconomyService
-from ktt112026.game.services.leaderboard_service import LeaderboardService
-from ktt112026.game.services.partner_service import PartnerService
-from ktt112026.game.services.exploration_service import ExplorationService
-from ktt112026.game.services.gather_service import GatherService
+from ktt112026.game.services.economy.economy_service import EconomyService
+from ktt112026.game.services.social.leaderboard_service import LeaderboardService
+from ktt112026.game.services.social.partner_service import PartnerService
+from ktt112026.game.services.world.gather_service import GatherService
 from ktt112026.game.services.pet_service import PetService
 from ktt112026.game.services.stats_service import StatsService
 from ktt112026.game.services.technique_service import TechniqueService
@@ -60,7 +59,6 @@ class GameCommands(commands.Cog):
         techniques: TechniqueService,
         stats: StatsService,
         pets: PetService,
-        exploration: ExplorationService,
         gather: GatherService,
         alchemy: AlchemyService,
         economy: EconomyService,
@@ -73,6 +71,8 @@ class GameCommands(commands.Cog):
         sects: SectService,
         world_events,
         pvp,
+        bet,
+        leaders,
         missions,
         sect_tower,
     ) -> None:
@@ -86,7 +86,6 @@ class GameCommands(commands.Cog):
         self.techniques = techniques
         self.stats = stats
         self.pets = pets
-        self.exploration = exploration
         self.gather = gather
         self.alchemy = alchemy
         self.economy = economy
@@ -99,6 +98,8 @@ class GameCommands(commands.Cog):
         self.sects = sects
         self.world_events = world_events
         self.pvp = pvp
+        self.bet = bet
+        self.leaders = leaders
         self.missions = missions
         self.sect_tower = sect_tower
 
@@ -123,7 +124,7 @@ class GameCommands(commands.Cog):
     async def me(self, ctx: commands.Context) -> None:
         player = self.players.get(str(ctx.author.id))
         if player is None:
-            await ctx.reply("Chưa có thể đạo. Gõ `.taothe`.", mention_author=False)
+            await ctx.reply("Chưa tạo thể đạo. Gõ `.taothe` để bắt đầu.", mention_author=False)
             return
         if player.display_name != ctx.author.display_name[:64]:
             player.display_name = ctx.author.display_name[:64]
@@ -160,7 +161,7 @@ class GameCommands(commands.Cog):
         )
         await self._img(ctx, png, "me.png")
 
-    @commands.command(name="tu", aliases=("tuluyen",))
+    @commands.command(name="tu", aliases=("tuluyen", "t"))
     async def tu(self, ctx: commands.Context, times: str | None = None) -> None:
         # .tu | .tu 5 | .tu max
         arg: int | str = 1
@@ -253,7 +254,7 @@ class GameCommands(commands.Cog):
             else ("🎁 Toàn thành sẵn sàng" if st["all_claimable"] else "⬜ Toàn thành (+%s LS)" % st["all_clear_stones"])
         )
         lines.append(bonus)
-        lines.append("Nhận: `.nhannv` hoặc `.nhannv tu|bicanh|thap|full`")
+        lines.append("Nhận: `.nhannv` hoặc `.nhannv tu|thap|full`")
         await ctx.reply("\n".join(lines), mention_author=False)
 
     @commands.command(name="nhannv", aliases=("claimquest",))
@@ -763,15 +764,69 @@ class GameCommands(commands.Cog):
             ),
         )
 
+
+    @commands.command(name="cuoc", aliases=("bet", "cacuoc"))
+    async def cuoc(self, ctx: commands.Context, amount: int | None = None, choice: str | None = "chan") -> None:
+        """`.cuoc <số> [chan|le|mat|xiu]` — cá cược Linh Thạch."""
+        if amount is None:
+            await ctx.reply("`.cuoc <số> chan|le|mat|xiu`\nVí dụ: `.cuoc 500 chan`", mention_author=False)
+            return
+        try:
+            r = self.bet.bet(str(ctx.author.id), amount, choice or "chan")
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Không cược được", detail=str(exc), ok=False))
+            return
+        icon = "Thắng" if r["win"] else "Thua"
+        detail = (
+            f"Xúc xắc: **{r['roll']}** · Bạn chọn **{r['choice']}** · {icon}\n"
+            f"{'+' if r['net']>=0 else ''}{r['net']:,} LS · Còn {r['stones_left']:,} LS"
+        )
+        await self._img(ctx, render_simple_result(title="Cá cược", detail=detail, ok=r["win"]))
+
+
+    @commands.command(name="leader", aliases=("leaders", "topserver"))
+    async def leader(self, ctx: commands.Context) -> None:
+        """Top lực chiến toàn server + trạng thái quà tuần."""
+        tops = self.leaders.top_power(10)
+        if not tops:
+            await ctx.reply("Chưa có dữ liệu.", mention_author=False)
+            return
+        lines = ["**Leader toàn server · Lực Chiến**"]
+        medals = ["🥇", "🥈", "🥉"]
+        for e in tops:
+            med = medals[e["rank"]-1] if e["rank"] <= 3 else f"`#{e['rank']}`"
+            lines.append(f"{med} **{e['name']}** — {e['score_fmt']}")
+        lines.append("_Top 1–3 nhận quà tuần tự động khi bot khởi động._")
+        await ctx.reply("\n".join(lines), mention_author=False)
+
+
+    @commands.command(name="quay", aliases=("mo", "gacha"))
+    async def quay(self, ctx: commands.Context, times: int = 1) -> None:
+        """`.quay` hoặc `.quay 10` — mở hòm linh thú."""
+        try:
+            result = self.pets.summon(str(ctx.author.id), times)
+        except ValueError as exc:
+            await self._img(ctx, render_simple_result(title="Không mở được", detail=str(exc), ok=False))
+            return
+        from ktt112026.game.render.gacha import render_gacha_open
+        png = render_gacha_open(
+            results=result.get("got") or [],
+            cost=int(result.get("cost") or 0),
+            stones_left=int(result.get("stones_left") or 0),
+        )
+        await self._img(ctx, png, "gacha.png")
+
     @commands.command(name="help", aliases=("huongdan", "trogiup"))
     async def help_game(self, ctx: commands.Context) -> None:
         lines_help = [
-            "**Kho:** `.tim`/`.tra` · **Tân thủ:** `.taothe` → `.tu` / `.tu 5` / `.tu max` → đầy thanh thì `.dp` (Hậu Kỳ thì `.dokiep`) → `.me` `.shop` `.thap` `.bicanh`",
-            "**Đạo lộ:** `.chon tien|ma` · `.gianhap tongmon|tantu` · `.tongmon`",
-            "**Đồ:** `.mua` `.dung <đan> [n]` `.hoc` `.tui` `.mac` · **Thú:** `.trieuhoi` `.mang`",
-            "**Xã hội:** `.chuyen` `.ban` `.bxh` `.ketduyen` `.daolu` `.songtu` · **Mã:** `.code <mã>`",
-            "**Ngày:** `.diemdanh` `.nhiemvu` `.nhannv` · **Xem người khác:** `.info @user` / `.xemthe @user`",
-            "Thể lực hồi ngoại tuyến (~2 phút/điểm). Lệnh không phân biệt hoa/thường.",
+            "**Tân thủ:** `.taothe` → `.tu` / `.tu 5` → đầy thì `.dp` (Hậu Kỳ: `.dokiep`) → `.me`",
+            "**Đạo lộ:** `.chon tien` hoặc `.chon ma` · `.gianhap tongmon` hoặc `.gianhap tantu`",
+            "**Tu luyện:** `.tu` · `.dp` · `.dokiep` · `.thap` · `.tongthap`",
+            "**Đồ:** `.shop` · `.mua <mã>` · `.dung` · `.hoc` · `.tui` · `.mac`",
+            "**Linh thú:** `.quay` / `.trieuhoi` · `.thu` · `.mang`",
+            "**Xã hội:** `.tongmon` · `.bxh` · `.chuyen` · `.daolu` · `.songtu` · `.cuoc`",
+            "**Ngày:** `.diemdanh` · `.nhiemvu` · `.nhannv` · `.info @user`",
+            "Thể lực hồi ngoại tuyến. Lệnh không phân biệt hoa thường.",
         ]
         await ctx.reply("\n".join(lines_help), mention_author=False)
 
@@ -804,7 +859,7 @@ class GameCommands(commands.Cog):
             detail = "Đã chọn Tán Tu — tự do tu luyện, không vào tông NPC. Sau này vẫn có thể đổi hướng nếu thiết kế cho phép."
         await self._img(ctx, render_simple_result(title="Chọn thế lực", detail=detail[:150]))
 
-    @commands.command(name="dokiep")
+    @commands.command(name="dokiep", aliases=("dk",))
     async def dokiep(self, ctx: commands.Context) -> None:
         try:
             sess = self.dokiep.start(str(ctx.author.id))
@@ -820,7 +875,7 @@ class GameCommands(commands.Cog):
         view = DokiepView(self.dokiep, ctx.author.id)
         await self._img(ctx, png, "dokiep.png", view=view)
 
-    @commands.command(name="thap", aliases=("leothap",))
+    @commands.command(name="thap", aliases=("leothap", "lt"))
     async def thap(self, ctx: commands.Context) -> None:
         try:
             run = self.tower.start(str(ctx.author.id))
@@ -969,32 +1024,6 @@ class GameCommands(commands.Cog):
             await self._img(ctx, render_simple_result(title="Không thu được", detail=str(exc), ok=False))
             return
         await self._img(ctx, render_simple_result(title="Đã thu về", detail=name))
-
-    @commands.command(name="bicanh")
-    async def bicanh(self, ctx: commands.Context, zone_id: str | None = None) -> None:
-        if zone_id is None:
-            zones = self.exploration.list_zones()
-            lines = [f"`{z['id']}` {z['name']} (C{z['major_min']}+) — {z.get('desc','')}" for z in zones[:8]]
-            await ctx.reply("**Bí cảnh:** `.bicanh <id>`\n" + "\n".join(lines), mention_author=False)
-            return
-        try:
-            r = self.exploration.explore(str(ctx.author.id), zone_id)
-            self.quests.bump(str(ctx.author.id), "bicanh", 1)
-        except ValueError as exc:
-            await self._img(ctx, render_simple_result(title="Không vào được", detail=str(exc), ok=False))
-            return
-        notes = " · ".join(r.get("event_notes") or [])
-        detail = (
-            f"{r['zone']['name']}: +{r['stones']:,} LS · +{r['cultivation']:,} TV · "
-            f"thảo {r['herb_summary']} · {notes}"
-        )[:150]
-        await self._img(
-            ctx,
-            render_simple_result(title=f"Bí cảnh · {r.get('event','?')}", detail=detail),
-        )
-        if r.get("locked"):
-            await ctx.reply("Tu Vi đầy — `.dp` hoặc `.dokiep`.", mention_author=False)
-
 
     @commands.command(name="haiduoc")
     async def haiduoc(self, ctx: commands.Context) -> None:
@@ -1195,6 +1224,7 @@ class GameCommands(commands.Cog):
             return
         try:
             result = self.shop.buy(str(ctx.author.id), item_id, qty)
+            self.quests.bump(str(ctx.author.id), "shop", 1)
         except Exception as exc:
             # Catch ValueError and unexpected errors so user always gets feedback
             msg = str(exc) or type(exc).__name__
@@ -1216,7 +1246,6 @@ async def setup_game(
     techniques: TechniqueService,
     stats: StatsService,
     pets: PetService,
-    exploration: ExplorationService,
     gather: GatherService,
     alchemy: AlchemyService,
     economy: EconomyService,
@@ -1229,13 +1258,15 @@ async def setup_game(
     sects: SectService,
     world_events,
     pvp,
+    bet,
+    leaders,
     missions,
     sect_tower,
 ) -> None:
     await bot.add_cog(
         GameCommands(
             bot, players, shop, dokiep, tower, inventory, items, techniques, stats,
-            pets, exploration, gather, alchemy, economy, partners, leaderboard, auction, codes, daily, quests, sects,
-            world_events, pvp, missions, sect_tower,
+            pets, gather, alchemy, economy, partners, leaderboard, auction, codes, daily, quests, sects,
+            world_events, pvp, bet, leaders, missions, sect_tower,
         )
     )

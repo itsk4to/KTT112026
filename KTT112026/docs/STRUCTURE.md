@@ -1,38 +1,57 @@
-# Cây thư mục KTT112026
+# Cấu trúc mã nguồn KTT112026 (v1.8.0+)
+
+## Nguyên tắc
+- **Data-driven**: JSON nằm trong `game/content/data/`, logic không hardcode số liệu.
+- **Tách lớp**: Rules (thuần) → Services (nghiệp vụ) → Discord (UI/lệnh) → Render (ảnh).
+- **Nhóm theo domain**: Dễ tìm, dễ mở rộng, dễ review.
 
 ```
 src/ktt112026/
-  bot.py              # Khởi động bot, gắn voice + game
-  config.py           # Biến môi trường
-  db/                 # SQLite dùng chung
-    connection.py
-    schema.py
-  voice/              # Nhạc, TTS, treo phòng
-    commands.py       # /join /play /tts …
-    presence.py
-    audio/
-    music/
-    tts/
-  game/               # Đạo Lộ Tu Tiên
-    models/           # Player, stats
-    rules/            # Công thức thuần (không Discord)
-    content/          # realms, shop data
-    services/         # Use-case: tu, shop, dokiep, tháp…
-    repo/             # Đọc/ghi DB
-    render/           # Vẽ ảnh PNG
-    discord/          # Lệnh .xxx + nút View
+├── bot.py                  # Khởi tạo bot, wire services, setup cogs
+├── config.py               # Settings (env, path)
+├── db/                     # SQLite schema + connection
+│   ├── schema.py
+│   └── connection.py
+├── game/
+│   ├── content/            # Dữ liệu tĩnh + loader
+│   │   ├── data/           # *.json (danduoc, linhthu, congphap, ...)
+│   │   ├── loader.py
+│   │   ├── realms.py
+│   │   ├── shop.py
+│   │   └── item_search.py
+│   ├── rules/              # Logic thuần (không DB, không Discord)
+│   │   ├── combat_rules.py
+│   │   ├── cultivation.py
+│   │   └── sect_rules.py
+│   ├── models/             # Dataclass / Player
+│   ├── repo/               # Truy cập DB (PlayerRepository)
+│   ├── services/           # Nghiệp vụ — nhóm theo domain
+│   │   ├── player/         # player, stats, dokiep, technique
+│   │   ├── combat/         # combat, tower, sect_tower, pvp
+│   │   ├── economy/        # shop, auction, bet, inventory, item_use, code
+│   │   ├── social/         # sect, partner, leaderboard, leader
+│   │   └── world/          # quest, mission, world_event, daily, gather, alchemy, pet
+│   ├── discord/            # Lệnh + View
+│   │   ├── commands.py     # GameCommands (có thể tách tiếp theo feature)
+│   │   ├── admin_commands.py
+│   │   └── *_view.py       # ShopView, TowerView, DokiepView, ...
+│   └── render/             # Pillow cards / gacha image
+│       ├── cards.py
+│       └── gacha.py
+└── voice/                  # Voice / Music / TTS
+    ├── commands.py
+    ├── presence.py
+    ├── music/              # manager, player, resolver, models
+    ├── tts/                # service, voices
+    └── audio/              # ffmpeg helper
 ```
 
-## Quy tắc sửa code
+## Quy ước khi thêm tính năng mới
+1. Dữ liệu số liệu → `game/content/data/*.json`
+2. Công thức thuần → `game/rules/`
+3. Nghiệp vụ + DB → `game/services/<domain>/`
+4. Lệnh Discord → `game/discord/` (hoặc tách file nếu lớn)
+5. Ảnh kết quả → `game/render/`
 
-| Muốn đổi… | Sửa ở |
-|-----------|--------|
-| Công thức tu / độ kiếp | `game/rules/` |
-| Tên cảnh giới, giá shop | `game/content/` |
-| Luồng `.tu` `.mua` | `game/services/` |
-| Ảnh thẻ / shop | `game/render/cards.py` |
-| Lệnh & nút Discord | `game/discord/` |
-| Cột DB | `db/schema.py` + `game/repo/` |
-| Voice | `voice/` |
-
-Không đặt công thức trong `discord/` hoặc `render/`.
+## Voice
+Độc lập với game. Chỉ dùng khi bật voice/music/tts.
