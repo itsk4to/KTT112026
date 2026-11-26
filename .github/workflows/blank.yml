@@ -165,16 +165,20 @@ jobs:
                       with destination.open("wb") as target:
                           shutil.copyfileobj(source, target)
 
-          children = list(temp_dir.iterdir())
+          # Find the real project root (directory that contains pyproject.toml + VERSION.txt)
+          # Handles both:
+          #   KTT112026_NEW/pyproject.toml   (current ZIP style)
+          #   pyproject.toml                 (flat ZIP)
+          source_root = None
+          for candidate in [temp_dir] + [p for p in temp_dir.iterdir() if p.is_dir()]:
+              if (candidate / "pyproject.toml").is_file() and (candidate / "VERSION.txt").is_file():
+                  source_root = candidate
+                  break
 
-          if (
-              len(children) == 1
-              and children[0].is_dir()
-              and not (temp_dir / "pyproject.toml").exists()
-          ):
-              source_root = children[0]
-          else:
-              source_root = temp_dir
+          if source_root is None:
+              raise SystemExit("Could not find project root (missing pyproject.toml + VERSION.txt)")
+
+          print(f"Detected source root: {source_root.name}")
 
           required = [
               "pyproject.toml",
@@ -211,9 +215,7 @@ jobs:
               if item.is_dir():
                   if destination.exists():
                       shutil.rmtree(destination)
-
                   shutil.copytree(item, destination)
-
               else:
                   shutil.copy2(item, destination)
 
