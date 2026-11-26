@@ -41,7 +41,7 @@ from ktt112026.game.services.player.technique_service import TechniqueService
 from ktt112026.game.services.combat.tower_service import TowerService
 from ktt112026.voice.commands import VoiceCommands
 from ktt112026.voice.music.manager import MusicManager
-from ktt112026.voice.presence import VoicePresenceService
+from ktt112026.game.discord.shop_delta import setup as setup_shop_delta
 
 logger = logging.getLogger("ktt.bot")
 
@@ -154,6 +154,7 @@ class KTTBot(commands.Bot):
             self.missions,
             self.sect_tower,
         )
+        await setup_shop_delta(self)
         if self.settings.sync_commands_on_start and not self._commands_synced:
             try:
                 await self.tree.sync()

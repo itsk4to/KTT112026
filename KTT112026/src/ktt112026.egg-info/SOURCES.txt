@@ -36,6 +36,7 @@ src/ktt112026/game/discord/admin_commands.py
 src/ktt112026/game/discord/commands.py
 src/ktt112026/game/discord/dokiep_view.py
 src/ktt112026/game/discord/sect_tower_view.py
+src/ktt112026/game/discord/shop_delta.py
 src/ktt112026/game/discord/shop_view.py
 src/ktt112026/game/discord/tower_view.py
 src/ktt112026/game/models/__init__.py
