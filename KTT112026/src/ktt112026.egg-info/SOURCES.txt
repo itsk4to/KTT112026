@@ -36,7 +36,6 @@ src/ktt112026/game/discord/admin_commands.py
 src/ktt112026/game/discord/commands.py
 src/ktt112026/game/discord/dokiep_view.py
 src/ktt112026/game/discord/sect_tower_view.py
-src/ktt112026/game/discord/shop_delta.py
 src/ktt112026/game/discord/shop_view.py
 src/ktt112026/game/discord/tower_view.py
 src/ktt112026/game/models/__init__.py
@@ -114,6 +113,7 @@ src/ktt112026/game/services/world/quest_service.py
 src/ktt112026/game/services/world/world_event_service.py
 src/ktt112026/game/util/__init__.py
 src/ktt112026/game/util/formatters.py
+src/ktt112026/shop_delta/__init__.py
 src/ktt112026/voice/__init__.py
 src/ktt112026/voice/commands.py
 src/ktt112026/voice/presence.py
