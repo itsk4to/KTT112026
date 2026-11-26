@@ -7,7 +7,7 @@ on:
         description: "Tên ZIP update trong repo File-Update"
         required: true
         type: string
-        default: "KTT112026_V1.8.3.zip"
+        default: "KTT112026_V1.8.4.zip"
 
 permissions:
   contents: write
@@ -165,18 +165,19 @@ jobs:
                       with destination.open("wb") as target:
                           shutil.copyfileobj(source, target)
 
-          # Find the real project root (directory that contains pyproject.toml + VERSION.txt)
-          # Handles both:
-          #   KTT112026_NEW/pyproject.toml   (current ZIP style)
-          #   pyproject.toml                 (flat ZIP)
+          # Tìm thư mục gốc dự án (chứa pyproject.toml + VERSION.txt)
+          # Hỗ trợ cả:
+          #   KTT112026_NEW/pyproject.toml
+          #   pyproject.toml (nằm thẳng)
           source_root = None
-          for candidate in [temp_dir] + [p for p in temp_dir.iterdir() if p.is_dir()]:
+          candidates = [temp_dir] + [p for p in temp_dir.iterdir() if p.is_dir()]
+          for candidate in candidates:
               if (candidate / "pyproject.toml").is_file() and (candidate / "VERSION.txt").is_file():
                   source_root = candidate
                   break
 
           if source_root is None:
-              raise SystemExit("Could not find project root (missing pyproject.toml + VERSION.txt)")
+              raise SystemExit("Không tìm thấy thư mục gốc dự án (thiếu pyproject.toml + VERSION.txt)")
 
           print(f"Detected source root: {source_root.name}")
 
