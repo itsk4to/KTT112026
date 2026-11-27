@@ -10,7 +10,7 @@ from typing import Any
 from ktt112026.game.content.loader import load_linhthu
 from ktt112026.game.repo.players import PlayerRepository
 
-DATA = Path(__file__).resolve().parents[1] / "content" / "data" / "summon.json"
+DATA = Path(__file__).resolve().parents[2] / "content" / "data" / "summon.json"
 
 
 @lru_cache(maxsize=1)

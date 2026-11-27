@@ -41,6 +41,7 @@ from ktt112026.game.services.player.technique_service import TechniqueService
 from ktt112026.game.services.combat.tower_service import TowerService
 from ktt112026.voice.commands import VoiceCommands
 from ktt112026.voice.music.manager import MusicManager
+from ktt112026.voice.presence import VoicePresenceService
 from ktt112026.shop_delta import setup as setup_shop_delta
 
 logger = logging.getLogger("ktt.bot")

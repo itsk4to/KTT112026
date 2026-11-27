@@ -14,7 +14,7 @@ def test_quest_progress_and_claim():
     PlayerService(repo, rng=random.Random(1)).create("u", "A")
     qs = QuestService(repo)
     qs.bump("u", "tu", 5)
-    qs.bump("u", "bicanh", 2)
+    qs.bump("u", "shop", 1)
     qs.bump("u", "thap", 1)
     st = qs.status("u")
     assert st["all_complete"]

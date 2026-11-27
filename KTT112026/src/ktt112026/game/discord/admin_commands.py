@@ -12,7 +12,7 @@ from ktt112026.game.services.code_service import CodeService
 from ktt112026.game.services.player_service import PlayerService
 
 logger = logging.getLogger("ktt.admin")
-VERSION_FILE = Path(__file__).resolve().parents[3] / "VERSION.txt"
+VERSION_FILE = Path(__file__).resolve().parents[4] / "VERSION.txt"
 
 
 def _read_version() -> str:
