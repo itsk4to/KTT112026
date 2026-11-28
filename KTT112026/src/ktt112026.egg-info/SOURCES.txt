@@ -114,6 +114,9 @@ src/ktt112026/game/services/world/world_event_service.py
 src/ktt112026/game/util/__init__.py
 src/ktt112026/game/util/formatters.py
 src/ktt112026/shop_delta/__init__.py
+src/ktt112026/shop_delta/catalog.py
+src/ktt112026/shop_delta/fmt.py
+src/ktt112026/shop_delta/service.py
 src/ktt112026/voice/__init__.py
 src/ktt112026/voice/commands.py
 src/ktt112026/voice/presence.py

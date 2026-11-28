@@ -1,7 +1,7 @@
 """Schema v7 — partner / songtu."""
 from __future__ import annotations
 
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 
 DDL = """
 CREATE TABLE IF NOT EXISTS schema_meta (
@@ -230,6 +230,38 @@ CREATE TABLE IF NOT EXISTS taixiu_bets (
     payout INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY(round_id, user_id),
     FOREIGN KEY(round_id) REFERENCES taixiu_rounds(id)
+);
+
+-- Shop Delta: ticket / đơn hàng / legit
+CREATE TABLE IF NOT EXISTS shop_tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL DEFAULT '',
+    guild_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'buy',        -- buy | support
+    category TEXT NOT NULL DEFAULT 'khac',   -- khoá danh mục chính
+    categories TEXT NOT NULL DEFAULT '[]',   -- JSON: mọi danh mục khớp từ khoá
+    product_text TEXT NOT NULL DEFAULT '',
+    detail TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'open',     -- open | done | closed
+    amount INTEGER NOT NULL DEFAULT 0,
+    order_product TEXT NOT NULL DEFAULT '',
+    order_channel_id TEXT NOT NULL DEFAULT '',
+    order_message_id TEXT NOT NULL DEFAULT '',
+    order_at REAL NOT NULL DEFAULT 0,
+    staff_id TEXT NOT NULL DEFAULT '',
+    created_at REAL NOT NULL,
+    done_at REAL NOT NULL DEFAULT 0,
+    legit_at REAL NOT NULL DEFAULT 0,
+    warranty_until REAL NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_shop_tickets_user ON shop_tickets(user_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_shop_tickets_channel ON shop_tickets(channel_id);
+
+CREATE TABLE IF NOT EXISTS shop_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
 );
 """
 
