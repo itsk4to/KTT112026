@@ -1,7 +1,7 @@
 """Shop Delta: phân loại từ khoá, định dạng đơn, ticket → done → +1 legit / bảo hành 48h."""
 from ktt112026.db.connection import Database
 from ktt112026.db.schema import ensure_schema
-from ktt112026.shop_delta.catalog import CATEGORIES, classify
+from ktt112026.shop_delta.catalog import CATEGORIES, classify, emojis_for
 from ktt112026.shop_delta.fmt import (
     SELLER_ID_DEFAULT,
     build_done_notice,
@@ -79,17 +79,29 @@ def test_format_money_matches_template():
 
 
 def test_order_message_matches_requested_layout():
-    msg = build_order_message(amount=25_000, channel_id=111, user_id=222,
-                              product="x2 bút sivi 1 tháng", status="pending", created_ts=1795762399)
-    assert msg.startswith("## <:order:1544918574106148895> **ĐƠN HÀNG**\n")
-    assert "> **Số Tiền**: **``25K VNĐ (25.000 VNĐ)``**" in msg
-    assert "> **Ticket**: <#111>" in msg
-    assert "> **Khách hàng**: <@222>" in msg
-    assert ">>> **Sản Phẩm**: <a:Boost1:1426859771406979202>  x2 bút sivi 1 tháng" in msg
-    assert "**Trạng thái**: ⌛ **Chờ**" in msg
-    assert msg.endswith("✦ <t:1795762399:f>")
-    done = build_order_message(amount=25_000, channel_id=1, user_id=2, product="p", status="done", created_ts=1)
-    assert "✅ **Hoàn thành**" in done and "⌛" not in done
+    msg = build_order_message(amount=50_000, channel_id=111, user_id=222, product="Két mùa 3x3",
+                              status="done", product_emoji="<:emoji_77:1575531871180431370>")
+    assert msg == (
+        "## <:emoji_67:1572852040634339389>  **ĐƠN HÀNG**\n"
+        "> **Số Tiền**: **``50K VNĐ (50.000 VNĐ)``**\n"
+        "> **Ticket**: <#111>\n"
+        "> **Khách hàng**: <@222>\n"
+        "**Thông tin đơn hàng**\n"
+        ">>> **Sản Phẩm**: <:emoji_77:1575531871180431370> Két mùa 3x3\n"
+        "<:emoji_74:1575510222326464583>  **Trạng thái**: ✅ **Hoàn thành**"
+    )
+    pending = build_order_message(amount=25_000, channel_id=1, user_id=2, product="p", status="pending")
+    assert "⌛ **Chờ**" in pending and "✅" not in pending
+    assert ">>> **Sản Phẩm**: p\n" in pending  # không có emoji sản phẩm thì bỏ trống, không thừa khoảng trắng
+
+
+def test_product_emoji_follows_product():
+    assert emojis_for("két mùa 3x3") == "<:emoji_77:1575531871180431370>"
+    assert emojis_for("kèn harmonica") == "<:emoji_75:1575531792226844855>"
+    both = emojis_for("két mùa + kèn")
+    assert "emoji_77" in both and "emoji_75" in both
+    assert emojis_for("hợp đồng định mệnh") == ""  # không có emoji → không thêm
+    assert emojis_for("abc") == ""
 
 
 # ---------- cú pháp legit ----------
@@ -122,9 +134,9 @@ def test_done_notice_and_unset_amount():
     n = build_done_notice(code="DL-0001", channel_id=1, user_id=2, product="két", amount=25_000)
     assert "ĐƠN HÀNG HOÀN THÀNH" in n and "`DL-0001`" in n and "25K VNĐ" in n and "<@2>" in n
     assert "Số Tiền" not in build_done_notice(code="DL-1", channel_id=1, user_id=2, product="p", amount=0)
-    m = build_order_message(amount=0, channel_id=1, user_id=2, product="p", status="pending", created_ts=1)
+    m = build_order_message(amount=0, channel_id=1, user_id=2, product="p", status="pending")
     assert "Chưa cập nhật" in m
-    c = build_order_message(amount=5_000, channel_id=1, user_id=2, product="p", status="cancelled", created_ts=1)
+    c = build_order_message(amount=5_000, channel_id=1, user_id=2, product="p", status="cancelled")
     assert "❌" in c
 
 

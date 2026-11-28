@@ -7,6 +7,7 @@ import unicodedata
 # key -> tên hiển thị, tên danh mục Discord, từ khoá (viết không dấu, thường)
 CATEGORIES: dict[str, dict] = {
     "ket": {
+        "emoji": "<:emoji_77:1575531871180431370>",
         "label": "Két mùa 3x3",
         "discord_category": "🧰┃Két mùa 3x3",
         "slug": "ket",
@@ -22,6 +23,7 @@ CATEGORIES: dict[str, dict] = {
         ],
     },
     "rank": {
+        "emoji": "<:emoji_78:1575531934593982535>",
         "label": "Cày rank",
         "discord_category": "🏆┃Cày rank",
         "slug": "rank",
@@ -31,12 +33,14 @@ CATEGORIES: dict[str, dict] = {
         ],
     },
     "xu": {
+        "emoji": "<:emoji_76:1575531834647773204>",
         "label": "Cày xu Delta",
         "discord_category": "💰┃Cày xu",
         "slug": "xu",
         "keywords": ["xu", "cay xu", "trieu xu", "xu delta", "1m xu"],
     },
     "item": {
+        "emoji": "<:emoji_75:1575531792226844855>",
         "label": "Item Layali",
         "discord_category": "🎁┃Item Layali",
         "slug": "item",
@@ -100,3 +104,13 @@ def primary_category(keys: list[str]) -> str:
 
 def label_of(key: str) -> str:
     return CATEGORIES.get(key, CATEGORIES["khac"])["label"]
+
+
+def emojis_for(text: str) -> str:
+    """Emoji của (các) sản phẩm khớp trong `text`, cách nhau bằng khoảng trắng. Không có → ''."""
+    out: list[str] = []
+    for key in classify(text):
+        emo = CATEGORIES.get(key, {}).get("emoji", "")
+        if emo and emo not in out:
+            out.append(emo)
+    return " ".join(out)

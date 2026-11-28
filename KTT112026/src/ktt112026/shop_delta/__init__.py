@@ -9,7 +9,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from .catalog import CATEGORIES, classify, label_of
+from .catalog import CATEGORIES, classify, emojis_for, label_of
 from .fmt import (
     SELLER_ID_DEFAULT,
     WARRANTY_HOURS,
@@ -334,7 +334,8 @@ class ShopDeltaCog(commands.Cog):
         now = int(time.time())
         text = build_order_message(
             amount=amount, channel_id=ticket["channel_id"], user_id=ticket["user_id"],
-            product=product, status=status, created_ts=int(ticket["order_at"] or now),
+            product=product, status=status, product_emoji=emojis_for(product),
+            created_ts=int(ticket["order_at"] or now),
         )
         msg = None
         if ticket["order_message_id"]:  # gọi lại /donhang = sửa đơn cũ, không gửi trùng
@@ -422,7 +423,8 @@ class ShopDeltaCog(commands.Cog):
                     await order_msg.edit(
                         content=build_order_message(
                             amount=ticket["amount"], channel_id=ticket["channel_id"], user_id=ticket["user_id"],
-                            product=product, status="done", created_ts=int(ticket["order_at"] or time.time()),
+                            product=product, status="done", product_emoji=emojis_for(product),
+                            created_ts=int(ticket["order_at"] or time.time()),
                         ),
                         allowed_mentions=NO_MENTIONS,
                     )
@@ -432,7 +434,7 @@ class ShopDeltaCog(commands.Cog):
                     report.append("⚠️ Không sửa được tin nhắn đơn cũ (đã bị xoá?) — gửi thông báo mới")
             notice = build_done_notice(
                 code=ticket["code"], channel_id=ticket["channel_id"], user_id=ticket["user_id"],
-                product=product, amount=ticket["amount"],
+                product=product, amount=ticket["amount"], product_emoji=emojis_for(product),
             )
             try:
                 if order_msg is not None:
@@ -463,6 +465,7 @@ class ShopDeltaCog(commands.Cog):
                 content=build_order_message(
                     amount=ticket["amount"], channel_id=ticket["channel_id"], user_id=ticket["user_id"],
                     product=ticket["order_product"] or ticket["product_text"], status="cancelled",
+                    product_emoji=emojis_for(ticket["order_product"] or ticket["product_text"]),
                     created_ts=int(ticket["order_at"] or time.time()),
                 ),
                 allowed_mentions=NO_MENTIONS,

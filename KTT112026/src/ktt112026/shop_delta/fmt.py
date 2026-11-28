@@ -4,9 +4,9 @@ from __future__ import annotations
 import re
 
 # Emoji tuỳ chỉnh theo server của shop (lấy từ mẫu đơn hàng).
-EMO_ORDER = "<:order:1544918574106148895>"
+EMO_ORDER = "<:emoji_67:1572852040634339389>"
 EMO_SHOP = "<:shop:1480206827416191099>"
-EMO_STATUS = "<a:X_online:1463063024012234834>"
+EMO_STATUS = "<:emoji_74:1575510222326464583>"
 EMO_PRODUCT = "<a:Boost1:1426859771406979202>"
 EMO_STRIP = (
     "<:may:1460962883029700680><:may:1460960269474988045>"
@@ -57,31 +57,25 @@ def format_money(amount: int) -> str:
     return full
 
 
+def _product_line(emoji: str, product: str) -> str:
+    return f"{emoji} {product}".strip() if emoji else product
+
+
 def build_order_message(
     *, amount: int, channel_id: int | str, user_id: int | str,
-    product: str, status: str, created_ts: int,
+    product: str, status: str, product_emoji: str = "", created_ts: int = 0,
 ) -> str:
-    """Mẫu thông báo ĐƠN HÀNG gửi vào kênh chỉ định."""
+    """Mẫu thông báo ĐƠN HÀNG gửi vào kênh chỉ định (emoji sản phẩm được thêm nếu có)."""
+    money = format_money(amount) if amount > 0 else "Chưa cập nhật"
     return (
-        f"## {EMO_ORDER} **ĐƠN HÀNG**\n"
-        f"> **Số Tiền**: **``{format_money(amount) if amount > 0 else 'Chưa cập nhật'}``**\n"
+        f"## {EMO_ORDER}  **ĐƠN HÀNG**\n"
+        f"> **Số Tiền**: **``{money}``**\n"
         f"> **Ticket**: <#{channel_id}>\n"
         f"> **Khách hàng**: <@{user_id}>\n"
-        f"{EMO_SHOP} **Thông tin đơn hàng**\n"
-        f">>> **Sản Phẩm**: {EMO_PRODUCT}  {product}\n"
-        f"{EMO_STATUS} **Trạng thái**: {STATUS_TEXT.get(status, STATUS_TEXT['pending'])}\n\n"
-        f"{EMO_STRIP} ✦ <t:{int(created_ts)}:f>"
+        f"**Thông tin đơn hàng**\n"
+        f">>> **Sản Phẩm**: {_product_line(product_emoji, product)}\n"
+        f"{EMO_STATUS}  **Trạng thái**: {STATUS_TEXT.get(status, STATUS_TEXT['pending'])}"
     )
-
-
-def legit_template(staff_id: int | str, code: str) -> str:
-    """Câu lệnh legit điền sẵn — khách chỉ việc copy."""
-    return f"+1 legit <@{staff_id}> {code}"
-
-
-def legit_template_block(staff_id: int | str, code: str) -> str:
-    """Khối code (Discord có nút copy) chứa câu lệnh legit điền sẵn."""
-    return f"```\n{legit_template(staff_id, code)}\n```"
 
 
 SELLER_ID_DEFAULT = 875320426711117844  # người bán cố định trong mẫu +1 legit (đổi bằng /shopcfg nguoi_ban)
@@ -111,7 +105,8 @@ def done_thanks_text(*, code: str, product: str, user_id: int | str, seller_id: 
     )
 
 
-def build_done_notice(*, code: str, channel_id: int | str, user_id: int | str, product: str, amount: int) -> str:
+def build_done_notice(*, code: str, channel_id: int | str, user_id: int | str, product: str, amount: int,
+                      product_emoji: str = "") -> str:
     """Thông báo 'xong đơn' gửi ra kênh đơn hàng (ngoài ticket)."""
     money = f"\n> **Số Tiền**: **``{format_money(amount)}``**" if amount > 0 else ""
     return (
@@ -119,7 +114,7 @@ def build_done_notice(*, code: str, channel_id: int | str, user_id: int | str, p
         f"> **Mã đơn**: `{code}`{money}\n"
         f"> **Ticket**: <#{channel_id}>\n"
         f"> **Khách hàng**: <@{user_id}>\n"
-        f">>> **Sản Phẩm**: {EMO_PRODUCT}  {product}\n"
+        f">>> **Sản Phẩm**: {_product_line(product_emoji, product)}\n"
         f"Cảm ơn bạn đã ủng hộ **Shop Delta** 💙"
     )
 

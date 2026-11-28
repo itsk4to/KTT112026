@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.2 — Mẫu ĐƠN HÀNG mới
+- Mẫu thông báo đơn hàng theo mẫu mới (emoji_67 tiêu đề, emoji_74 trạng thái, bỏ dòng thời gian).
+- Tự thêm emoji của sản phẩm (két, kèn/tên lửa, rank, xu) vào dòng **Sản Phẩm** nếu có; sản phẩm không có emoji thì chỉ ghi tên. Emoji lấy từ `CATEGORIES` trong `shop_delta/catalog.py`.
+
 ## 1.9.1 — Shop Delta: sửa gửi thông báo xong đơn, mẫu legit mới
 - **Sửa lỗi "nghẹn" khi xong đơn:** `/done` giờ báo từng bước ✅/❌ kèm lý do, không còn nuốt lỗi; có thể gõ lại `/done` để gửi lại; tự fetch kênh nếu không có trong cache; gửi cả thông báo "ĐƠN HÀNG HOÀN THÀNH" ra kênh đơn hàng (kể cả khi chưa có `/donhang`). Mọi lệnh có error handler, không còn treo "đang suy nghĩ".
 - **Mẫu legit mới:** `+1 legit <@người_bán> <mã sp>` với người bán cố định (`/shopcfg nguoi_ban`); mã gõ `DL-0001`/`dl-1`/`1` đều nhận.
