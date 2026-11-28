@@ -64,7 +64,7 @@ def build_order_message(
     """Mẫu thông báo ĐƠN HÀNG gửi vào kênh chỉ định."""
     return (
         f"## {EMO_ORDER} **ĐƠN HÀNG**\n"
-        f"> **Số Tiền**: **``{format_money(amount)}``**\n"
+        f"> **Số Tiền**: **``{format_money(amount) if amount > 0 else 'Chưa cập nhật'}``**\n"
         f"> **Ticket**: <#{channel_id}>\n"
         f"> **Khách hàng**: <@{user_id}>\n"
         f"{EMO_SHOP} **Thông tin đơn hàng**\n"
@@ -74,15 +74,53 @@ def build_order_message(
     )
 
 
-def done_thanks_text(*, code: str, product: str, user_id: int | str, staff_id: int | str,
+def legit_template(staff_id: int | str, code: str) -> str:
+    """Câu lệnh legit điền sẵn — khách chỉ việc copy."""
+    return f"+1 legit <@{staff_id}> {code}"
+
+
+def legit_template_block(staff_id: int | str, code: str) -> str:
+    """Khối code (Discord có nút copy) chứa câu lệnh legit điền sẵn."""
+    return f"```\n{legit_template(staff_id, code)}\n```"
+
+
+SELLER_ID_DEFAULT = 875320426711117844  # người bán cố định trong mẫu +1 legit (đổi bằng /shopcfg nguoi_ban)
+
+
+def normalize_code(code: str) -> str:
+    """'dl-1' / 'DL-0001' / '1' / '0001' → 'DL-0001'. Giữ nguyên nếu không phải dạng số."""
+    c = (code or "").strip().strip("`.,;:!").upper()
+    m = re.fullmatch(r"(?:DL-?)?(\d{1,6})", c)
+    return f"DL-{int(m.group(1)):04d}" if m else c
+
+
+def legit_template(seller_id: int | str, code: str) -> str:
+    """Dòng khách copy-paste vào kênh legit."""
+    return f"+1 legit <@{seller_id}> {code}"
+
+
+def done_thanks_text(*, code: str, product: str, user_id: int | str, seller_id: int | str,
                      legit_channel_id: int | str | None) -> str:
     where = f"<#{legit_channel_id}>" if legit_channel_id else "kênh legit"
     return (
         f"✅ **Đơn hàng `{code}` đã hoàn thành!**\n"
         f"Sản phẩm: {product}\n\n"
         f"Cảm ơn <@{user_id}> đã tin tưởng và ủng hộ **Shop Delta** 💙\n\n"
-        f"🛡️ **Nhận bảo hành {WARRANTY_HOURS}h:** vào {where} và gõ:\n"
-        f"`+1 legit <@{staff_id}> {code}`"
+        f"🛡️ **Nhận bảo hành {WARRANTY_HOURS}h:** vào {where}, copy và gửi đúng mẫu bên dưới:\n"
+        f"```\n{legit_template(seller_id, code)}\n```"
+    )
+
+
+def build_done_notice(*, code: str, channel_id: int | str, user_id: int | str, product: str, amount: int) -> str:
+    """Thông báo 'xong đơn' gửi ra kênh đơn hàng (ngoài ticket)."""
+    money = f"\n> **Số Tiền**: **``{format_money(amount)}``**" if amount > 0 else ""
+    return (
+        f"## ✅ **ĐƠN HÀNG HOÀN THÀNH**\n"
+        f"> **Mã đơn**: `{code}`{money}\n"
+        f"> **Ticket**: <#{channel_id}>\n"
+        f"> **Khách hàng**: <@{user_id}>\n"
+        f">>> **Sản Phẩm**: {EMO_PRODUCT}  {product}\n"
+        f"Cảm ơn bạn đã ủng hộ **Shop Delta** 💙"
     )
 
 
@@ -90,8 +128,8 @@ LEGIT_RE = re.compile(r"^\s*\+1\s+legit\s+<@!?(\d+)>\s+(\S+)", re.IGNORECASE)
 
 
 def parse_legit(content: str) -> tuple[int, str] | None:
-    """'+1 legit @user MA' → (staff_id, MA). Không đúng cú pháp → None."""
+    """'+1 legit <@id> MÃ' → (id_được_tag, 'DL-0001'). Không đúng cú pháp → None."""
     m = LEGIT_RE.match(content or "")
     if not m:
         return None
-    return int(m.group(1)), m.group(2).strip().upper()
+    return int(m.group(1)), normalize_code(m.group(2))

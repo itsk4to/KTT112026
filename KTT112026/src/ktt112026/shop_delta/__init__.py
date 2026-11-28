@@ -11,10 +11,13 @@ from discord.ext import commands
 
 from .catalog import CATEGORIES, classify, label_of
 from .fmt import (
+    SELLER_ID_DEFAULT,
     WARRANTY_HOURS,
+    build_done_notice,
     build_order_message,
     done_thanks_text,
     format_money,
+    legit_template,
     parse_legit,
     parse_money,
 )
@@ -158,6 +161,37 @@ class ShopDeltaCog(commands.Cog):
     def legit_channel_id(self) -> int:
         return self.svc.get_int("legit_channel", FEEDBACK_CHANNEL_ID)
 
+    def seller_id(self) -> int:
+        return self.svc.get_int("seller_id", SELLER_ID_DEFAULT)
+
+    async def _text_channel(self, guild: discord.Guild | None, channel_id: int) -> discord.TextChannel | None:
+        """Lấy kênh chữ; không có trong cache thì fetch từ API (tránh 'không gửi được' do cache)."""
+        ch = guild.get_channel(channel_id) if guild else None
+        if ch is None and channel_id:
+            try:
+                ch = await self.bot.fetch_channel(channel_id)
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                return None
+        return ch if isinstance(ch, discord.TextChannel) else None
+
+    @staticmethod
+    def _why(exc: Exception) -> str:
+        if isinstance(exc, discord.Forbidden):
+            return "bot thiếu quyền (View Channel / Send Messages / Embed Links)"
+        return f"lỗi Discord: {str(exc)[:120]}"
+
+    async def cog_app_command_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        """Không để lệnh treo 'đang suy nghĩ' khi có lỗi bất ngờ."""
+        logger.exception("Shop Delta command error", exc_info=error)
+        msg = "⚠️ Có lỗi khi xử lý lệnh, vui lòng thử lại hoặc báo admin."
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(msg, ephemeral=True)
+            else:
+                await interaction.response.send_message(msg, ephemeral=True)
+        except discord.HTTPException:
+            pass
+
     def _is_staff(self, member: discord.Member) -> bool:
         role_id = self.staff_role_id()
         if role_id == 0:
@@ -235,6 +269,7 @@ class ShopDeltaCog(commands.Cog):
         kenh_don_hang="Kênh nhận thông báo ĐƠN HÀNG",
         kenh_legit="Kênh khách gõ +1 legit",
         role_staff="Role staff",
+        nguoi_ban="Người bán được tag trong mẫu +1 legit",
     )
     @app_commands.default_permissions(administrator=True)
     async def shopcfg(
@@ -243,6 +278,7 @@ class ShopDeltaCog(commands.Cog):
         kenh_don_hang: discord.TextChannel | None = None,
         kenh_legit: discord.TextChannel | None = None,
         role_staff: discord.Role | None = None,
+        nguoi_ban: discord.User | None = None,
     ) -> None:
         if not isinstance(interaction.user, discord.Member) or not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("Chỉ admin được cấu hình.", ephemeral=True)
@@ -253,12 +289,15 @@ class ShopDeltaCog(commands.Cog):
             self.svc.set_setting("legit_channel", str(kenh_legit.id))
         if role_staff:
             self.svc.set_setting("staff_role", str(role_staff.id))
+        if nguoi_ban:
+            self.svc.set_setting("seller_id", str(nguoi_ban.id))
         role_id = self.staff_role_id()
         await interaction.response.send_message(
             "**Cấu hình Shop Delta**\n"
             f"• Kênh đơn hàng: <#{self.order_channel_id()}>\n"
             f"• Kênh legit: <#{self.legit_channel_id()}>\n"
-            f"• Role staff: {f'<@&{role_id}>' if role_id else 'chưa đặt (chỉ admin)'}",
+            f"• Role staff: {f'<@&{role_id}>' if role_id else 'chưa đặt (chỉ admin)'}\n"
+            f"• Người bán (mẫu legit): <@{self.seller_id()}>",
             ephemeral=True,
             allowed_mentions=NO_MENTIONS,
         )
@@ -283,8 +322,8 @@ class ShopDeltaCog(commands.Cog):
         if amount <= 0:
             await interaction.response.send_message("Số tiền phải lớn hơn 0.", ephemeral=True)
             return
-        order_ch = interaction.guild.get_channel(self.order_channel_id()) if interaction.guild else None
-        if not isinstance(order_ch, discord.TextChannel):
+        order_ch = await self._text_channel(interaction.guild, self.order_channel_id())
+        if order_ch is None:
             await interaction.response.send_message(
                 "Chưa có kênh đơn hàng hợp lệ — dùng `/shopcfg kenh_don_hang`.", ephemeral=True
             )
@@ -300,13 +339,18 @@ class ShopDeltaCog(commands.Cog):
         msg = None
         if ticket["order_message_id"]:  # gọi lại /donhang = sửa đơn cũ, không gửi trùng
             try:
-                old_ch = interaction.guild.get_channel(int(ticket["order_channel_id"]))  # type: ignore[union-attr]
+                old_ch = await self._text_channel(interaction.guild, int(ticket["order_channel_id"]))
                 msg = await old_ch.fetch_message(int(ticket["order_message_id"]))  # type: ignore[union-attr]
                 await msg.edit(content=text, allowed_mentions=NO_MENTIONS)
             except (discord.NotFound, discord.Forbidden, discord.HTTPException, AttributeError, ValueError):
                 msg = None
         if msg is None:
-            msg = await order_ch.send(text, allowed_mentions=NO_MENTIONS)
+            try:
+                msg = await order_ch.send(text, allowed_mentions=NO_MENTIONS)
+            except (discord.Forbidden, discord.HTTPException) as exc:
+                await interaction.followup.send(
+                    f"❌ Không gửi được vào {order_ch.mention}: {self._why(exc)}", ephemeral=True)
+                return
             self.svc.set_order(ticket["id"], amount=amount, product=product,
                                channel_id=order_ch.id, message_id=msg.id, now=now)
         else:
@@ -316,61 +360,195 @@ class ShopDeltaCog(commands.Cog):
             f"✅ Đã gửi đơn **{format_money(amount)}** → {msg.jump_url}", ephemeral=True
         )
 
-    @app_commands.command(name="done", description="Xác nhận đơn hoàn thành, cảm ơn khách và hướng dẫn legit")
+    @app_commands.command(name="done", description="Xác nhận đơn hoàn thành, cảm ơn khách và gửi mẫu legit")
     @app_commands.describe(ghi_chu="Lời nhắn thêm gửi khách (không bắt buộc)")
     async def done(self, interaction: discord.Interaction, ghi_chu: str | None = None) -> None:
+        """Có thể gõ lại /done để gửi lại các thông báo bị lỗi lần trước (đơn không bị đánh dấu hai lần)."""
         if not await self._staff_only(interaction):
             return
+        channel_id = interaction.channel_id or 0
+        before = self.svc.get_by_channel(channel_id)
         try:
-            ticket = self.svc.complete(interaction.channel_id or 0, interaction.user.id)
+            ticket = self.svc.complete(channel_id, interaction.user.id, allow_repeat=True)
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
+        repeat = bool(before and before["status"] == "done")
         await interaction.response.defer(ephemeral=True)
+        report: list[str] = ["🔁 Gửi lại thông báo cho đơn đã hoàn thành" if repeat else "✅ Đã đánh dấu đơn hoàn thành"]
+
+        guild = interaction.guild
         product = ticket["order_product"] or ticket["product_text"]
         thanks = done_thanks_text(
             code=ticket["code"], product=product, user_id=ticket["user_id"],
-            staff_id=interaction.user.id, legit_channel_id=self.legit_channel_id(),
+            seller_id=self.seller_id(), legit_channel_id=self.legit_channel_id(),
         )
         if ghi_chu:
             thanks += f"\n\n💬 {ghi_chu}"
         embed = discord.Embed(title="✅ Shop Delta - Đơn hàng hoàn thành", description=thanks, color=0x57F287)
         embed.timestamp = discord.utils.utcnow()
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="Copy mẫu legit", emoji="📋", style=discord.ButtonStyle.secondary,
+                                        custom_id=f"legit_tpl:{ticket['code']}"))
 
-        # 1) thông báo trong ticket
-        await interaction.channel.send(  # type: ignore[union-attr]
-            content=f"<@{ticket['user_id']}>", embed=embed,
-            allowed_mentions=discord.AllowedMentions(users=True),
-        )
-        # 2) gửi riêng (DM) cho khách
-        dm_ok = True
+        # 1) trong ticket
+        try:
+            await interaction.channel.send(  # type: ignore[union-attr]
+                content=f"<@{ticket['user_id']}>", embed=embed, view=view,
+                allowed_mentions=discord.AllowedMentions(users=True),
+            )
+            report.append("✅ Đã gửi thông báo trong ticket")
+        except (discord.Forbidden, discord.HTTPException) as exc:
+            report.append(f"❌ Không gửi được trong ticket: {self._why(exc)}")
+
+        # 2) gửi riêng (DM)
         try:
             user = self.bot.get_user(int(ticket["user_id"])) or await self.bot.fetch_user(int(ticket["user_id"]))
-            await user.send(embed=embed)
+            await user.send(embed=embed, view=view)
+            report.append("✅ Đã gửi DM cho khách")
         except (discord.Forbidden, discord.HTTPException):
-            dm_ok = False
-        # 3) cập nhật trạng thái đơn trong kênh đơn hàng: Chờ → Hoàn thành
-        order_updated = False
-        if ticket["order_message_id"] and interaction.guild:
+            report.append("⚠️ Không DM được (khách tắt tin nhắn riêng) — thông báo trong ticket vẫn có")
+
+        # 3) ngoài ticket: cập nhật trạng thái đơn + gửi thông báo xong đơn vào kênh đơn hàng
+        order_ch = await self._text_channel(guild, self.order_channel_id())
+        if order_ch is None:
+            report.append("❌ Không thấy kênh đơn hàng — dùng `/shopcfg kenh_don_hang` rồi `/done` lại")
+        else:
+            order_msg = None
+            if ticket["order_message_id"]:
+                try:
+                    och = await self._text_channel(guild, int(ticket["order_channel_id"])) or order_ch
+                    order_msg = await och.fetch_message(int(ticket["order_message_id"]))
+                    await order_msg.edit(
+                        content=build_order_message(
+                            amount=ticket["amount"], channel_id=ticket["channel_id"], user_id=ticket["user_id"],
+                            product=product, status="done", created_ts=int(ticket["order_at"] or time.time()),
+                        ),
+                        allowed_mentions=NO_MENTIONS,
+                    )
+                    report.append("✅ Đã đổi trạng thái đơn: ⌛ Chờ → ✅ Hoàn thành")
+                except (discord.NotFound, discord.Forbidden, discord.HTTPException, ValueError):
+                    order_msg = None
+                    report.append("⚠️ Không sửa được tin nhắn đơn cũ (đã bị xoá?) — gửi thông báo mới")
+            notice = build_done_notice(
+                code=ticket["code"], channel_id=ticket["channel_id"], user_id=ticket["user_id"],
+                product=product, amount=ticket["amount"],
+            )
             try:
-                ch = interaction.guild.get_channel(int(ticket["order_channel_id"]))
-                msg = await ch.fetch_message(int(ticket["order_message_id"]))  # type: ignore[union-attr]
-                await msg.edit(
-                    content=build_order_message(
-                        amount=ticket["amount"], channel_id=ticket["channel_id"], user_id=ticket["user_id"],
-                        product=product, status="done", created_ts=int(ticket["order_at"] or time.time()),
-                    ),
-                    allowed_mentions=NO_MENTIONS,
-                )
-                order_updated = True
-            except (discord.NotFound, discord.Forbidden, discord.HTTPException, AttributeError, ValueError):
-                pass
-        notes = [
-            "✅ Đã gửi thông báo trong ticket",
-            "✅ Đã gửi DM cho khách" if dm_ok else "⚠️ Không DM được (khách tắt tin nhắn riêng)",
-            "✅ Đã cập nhật trạng thái đơn" if order_updated else "ℹ️ Chưa có đơn trong kênh đơn hàng (dùng `/donhang`)",
-        ]
-        await interaction.followup.send("\n".join(notes), ephemeral=True)
+                if order_msg is not None:
+                    try:
+                        await order_msg.reply(notice, mention_author=False, allowed_mentions=NO_MENTIONS)
+                    except discord.HTTPException:
+                        await order_ch.send(notice, allowed_mentions=NO_MENTIONS)
+                else:
+                    await order_ch.send(notice, allowed_mentions=NO_MENTIONS)
+                report.append(f"✅ Đã gửi thông báo xong đơn vào {order_ch.mention}")
+            except (discord.Forbidden, discord.HTTPException) as exc:
+                report.append(f"❌ Không gửi được vào {order_ch.mention}: {self._why(exc)}")
+        await interaction.followup.send("\n".join(report), ephemeral=True)
+
+    @app_commands.command(name="huydon", description="Huỷ đơn trong ticket này (đổi trạng thái đơn → ❌ Đã huỷ)")
+    async def huydon(self, interaction: discord.Interaction) -> None:
+        if not await self._staff_only(interaction):
+            return
+        ticket = self.svc.get_by_channel(interaction.channel_id or 0)
+        if ticket is None or not ticket["order_message_id"]:
+            await interaction.response.send_message("Ticket này chưa có đơn nào trong kênh đơn hàng.", ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=True)
+        try:
+            och = await self._text_channel(interaction.guild, int(ticket["order_channel_id"]))
+            msg = await och.fetch_message(int(ticket["order_message_id"]))  # type: ignore[union-attr]
+            await msg.edit(
+                content=build_order_message(
+                    amount=ticket["amount"], channel_id=ticket["channel_id"], user_id=ticket["user_id"],
+                    product=ticket["order_product"] or ticket["product_text"], status="cancelled",
+                    created_ts=int(ticket["order_at"] or time.time()),
+                ),
+                allowed_mentions=NO_MENTIONS,
+            )
+            await interaction.followup.send("❌ Đã đổi trạng thái đơn → Đã huỷ.", ephemeral=True)
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException, AttributeError, ValueError) as exc:
+            await interaction.followup.send(f"Không sửa được tin nhắn đơn: {self._why(exc)}", ephemeral=True)
+
+    @app_commands.command(name="legitbang", description="Gửi bảng hướng dẫn +1 legit (mẫu copy sẵn) vào kênh legit")
+    @app_commands.describe(kenh="Kênh gửi bảng (mặc định: kênh legit)")
+    async def legitbang(self, interaction: discord.Interaction, kenh: discord.TextChannel | None = None) -> None:
+        if not await self._staff_only(interaction):
+            return
+        target = kenh or await self._text_channel(interaction.guild, self.legit_channel_id())
+        if target is None:
+            await interaction.response.send_message("Chưa có kênh legit — dùng `/shopcfg kenh_legit`.", ephemeral=True)
+            return
+        seller = self.seller_id()
+        embed = discord.Embed(
+            title="🛡️ BẢNG +1 LEGIT — NHẬN BẢO HÀNH 48H",
+            description="Mua xong hãy **+1 legit** để được bảo hành. Bấm giữ vào khung bên dưới để **copy mẫu**.",
+            color=0x57F287,
+        )
+        embed.add_field(name="📋 Mẫu (copy rồi thay mã)", value=f"```\n{legit_template(seller, '<mã sp>')}\n```", inline=False)
+        embed.add_field(name="📌 Ví dụ", value=f"```\n{legit_template(seller, 'DL-0001')}\n```", inline=False)
+        embed.add_field(
+            name="📖 Cách làm",
+            value=(
+                "1️⃣ Khi đơn xong, bot gửi bạn **mã sản phẩm** dạng `DL-xxxx` (trong ticket và tin nhắn riêng)\n"
+                "2️⃣ Copy mẫu ở trên, thay `<mã sp>` bằng mã của bạn\n"
+                "3️⃣ Gửi tin nhắn vào **kênh này** — bot sẽ tự kiểm tra"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="🛡️ Bảo hành",
+            value=f"**{WARRANTY_HOURS} giờ** tính từ lúc legit thành công • Mỗi đơn legit **1 lần** • Phải dùng đúng mã đơn của bạn",
+            inline=False,
+        )
+        await interaction.response.defer(ephemeral=True)
+        try:
+            msg = await target.send(embed=embed)
+        except (discord.Forbidden, discord.HTTPException) as exc:
+            await interaction.followup.send(f"❌ Không gửi được vào {target.mention}: {self._why(exc)}", ephemeral=True)
+            return
+        try:
+            await msg.pin()
+        except (discord.Forbidden, discord.HTTPException):
+            pass
+        await interaction.followup.send(f"✅ Đã gửi bảng legit vào {target.mention}", ephemeral=True)
+
+    @app_commands.command(name="baohanh", description="Kiểm tra bảo hành của một đơn")
+    @app_commands.describe(ma="Mã đơn, VD: DL-0001")
+    async def baohanh(self, interaction: discord.Interaction, ma: str) -> None:
+        try:
+            r = self.svc.warranty_status(ma)
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+        t = r["ticket"]
+        is_staff = isinstance(interaction.user, discord.Member) and self._is_staff(interaction.user)
+        if not is_staff and t["user_id"] != str(interaction.user.id):
+            await interaction.response.send_message("Mã đơn này không phải của bạn.", ephemeral=True)
+            return
+        text = {
+            "chua_legit": f"Đơn `{t['code']}` chưa legit. Gửi `{legit_template(self.seller_id(), t['code'])}` ở <#{self.legit_channel_id()}> để nhận bảo hành {WARRANTY_HOURS}h."
+            if t["status"] == "done" else f"Đơn `{t['code']}` chưa hoàn thành.",
+            "con_han": f"🛡️ Đơn `{t['code']}` **còn bảo hành** đến <t:{int(t['warranty_until'])}:f> (<t:{int(t['warranty_until'])}:R>).",
+            "het_han": f"⌛ Đơn `{t['code']}` **đã hết bảo hành** từ <t:{int(t['warranty_until'])}:f>.",
+        }[r["state"]]
+        await interaction.response.send_message(text, ephemeral=True, allowed_mentions=NO_MENTIONS)
+
+    @app_commands.command(name="thongke", description="Thống kê đơn hàng Shop Delta")
+    async def thongke(self, interaction: discord.Interaction) -> None:
+        if not await self._staff_only(interaction):
+            return
+        st = self.svc.stats()
+        def line(label: str, pair: tuple[int, int]) -> str:
+            return f"• {label}: **{pair[0]}** đơn · {format_money(pair[1]) if pair[1] else '0 VNĐ'}"
+        await interaction.response.send_message(
+            "**📊 Thống kê Shop Delta**\n"
+            + line("24 giờ qua", st["day"]) + "\n" + line("7 ngày qua", st["week"]) + "\n"
+            + line("Tổng", st["all"]) + "\n"
+            f"• Ticket đang mở: **{st['open']}**\n• Tổng +1 legit: **{st['legit']}**",
+            ephemeral=True,
+        )
 
     # ---------- Tạo ticket ----------
     async def _ensure_category(self, guild: discord.Guild, name: str) -> discord.CategoryChannel | None:
@@ -498,6 +676,18 @@ class ShopDeltaCog(commands.Cog):
             await interaction.response.send_message(embed=embed)
             return
 
+        if custom_id.startswith("legit_tpl:"):
+            t = self.svc.get_by_code(custom_id.split(":", 1)[1])
+            if t is None or t["user_id"] != str(interaction.user.id):
+                await interaction.response.send_message("Mã đơn này không phải của bạn.", ephemeral=True)
+                return
+            await interaction.response.send_message(
+                f"📋 Copy dòng dưới rồi gửi vào <#{self.legit_channel_id()}>:\n"
+                f"```\n{legit_template(self.seller_id(), t['code'])}\n```",
+                ephemeral=True,
+            )
+            return
+
         if custom_id == "pay_card":
             await interaction.response.send_modal(CardModal(self))
             return
@@ -524,13 +714,13 @@ class ShopDeltaCog(commands.Cog):
         if parsed is None:
             if text.strip().lower().startswith("+1"):
                 await message.reply(
-                    "Cú pháp: `+1 legit @người_bán <mã_đơn>` (mã đơn như `DL-0001`).",
+                    f"Gửi đúng mẫu: `{legit_template(self.seller_id(), '<mã sp>')}` (mã như `DL-0001`).",
                     mention_author=False, delete_after=20, allowed_mentions=NO_MENTIONS,
                 )
             return
-        staff_id, code = parsed
+        tagged_id, code = parsed
         try:
-            result = self.svc.legit(message.author.id, staff_id, code)
+            result = self.svc.legit(message.author.id, tagged_id, code, seller_ids=(self.seller_id(),))
         except ValueError as exc:
             await message.reply(f"❌ {exc}", mention_author=False, delete_after=30, allowed_mentions=NO_MENTIONS)
             return
@@ -538,7 +728,7 @@ class ShopDeltaCog(commands.Cog):
         embed = discord.Embed(
             title="✅ Đã ghi nhận +1 legit",
             description=(
-                f"Cảm ơn {message.author.mention} đã legit cho <@{staff_id}>!\n\n"
+                f"Cảm ơn {message.author.mention} đã legit cho <@{tagged_id}>!\n\n"
                 f"🛡️ Đơn **`{t['code']}`** được **bảo hành {WARRANTY_HOURS} giờ** "
                 f"(đến <t:{int(result['warranty_until'])}:f>)."
             ),
