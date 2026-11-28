@@ -40,9 +40,9 @@ PRICE_LIST = {
         "title": "<:emoji_77:1575531871180431370> Két mùa 3x3",
         "description": (
             "**Giá:** 150.000₫\n\n"
-            "• Không tính nhiệm vụ định mệnh\n"
-            "• Không tính hợp đồng sưu tập\n"
-            "• Nhiệm vụ định mệnh: **30.000₫**\n\n"
+            "• Không tính nhiệm vụ định mệnh/sưu tập\n"
+            "• Nhiệm vụ định mệnh: **30.000₫**\n"
+            "• Nhiệm vụ nhà sưu tập: **15.000₫**\n\n"
             f"Tạo ticket ở <#{PANEL_CHANNEL_ID}> để mua hàng."
         ),
     },
@@ -52,11 +52,18 @@ PRICE_LIST = {
         "title": "<:emoji_76:1575531834647773204> Cày xu Delta",
         "description": f"**Giá:** 2.000₫ / 1M xu\n\nTạo ticket ở <#{PANEL_CHANNEL_ID}> để mua hàng.",
     },
+    # Giữ key "harmonica" để panel đã gửi trước đó trong Discord vẫn chọn được.
     "harmonica": {
-        "label": "Cày Kèn Harmonica",
+        "label": "Item Layali (các vật phẩm)",
         "emoji": {"id": 1575531792226844855, "name": "emoji_75"},
-        "title": "<:emoji_75:1575531792226844855> Cày Kèn Harmonica",
-        "description": f"**Giá:** 20.000₫\n\nTạo ticket ở <#{PANEL_CHANNEL_ID}> để mua hàng.",
+        "title": "<:emoji_75:1575531792226844855> Item Layali (các vật phẩm)",
+        "description": (
+            "**Bảng giá Item Layali:**\n\n"
+            "• Kèn Harmonica: **20.000₫**\n"
+            "• Tên lửa: **40.000₫**\n"
+            "• Cả 2 món đồ: **50.000₫**\n\n"
+            f"Tạo ticket ở <#{PANEL_CHANNEL_ID}> để mua hàng."
+        ),
     },
 }
 
